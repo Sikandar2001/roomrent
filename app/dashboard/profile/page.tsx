@@ -77,7 +77,7 @@ export default function ProfilePage() {
               <h2 className="mt-4 font-semibold text-zinc-900 truncate w-full">
                 {user.email || "User"}
               </h2>
-              <p className="mt-1 text-xs text-zinc-500 font-mono">ID: {user.uid}</p>
+              <p className="mt-1 text-xs text-zinc-500">ID: {user.uid}</p>
             </div>
             
             <div className="mt-8 border-t border-zinc-100 pt-6">

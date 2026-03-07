@@ -8,12 +8,8 @@ import Footer from "@/components/footer";
 import MobileNav from "@/components/mobile-nav";
 import SplashScreen from "@/components/SplashScreen";
 
-const lexendSans = Lexend({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-const lexendMono = Lexend({
-  variable: "--font-geist-mono",
+const lexend = Lexend({
+  variable: "--font-lexend",
   subsets: ["latin"],
 });
 
@@ -31,7 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${lexendSans.variable} ${lexendMono.variable} antialiased pb-16 lg:pb-0 pb-[env(safe-area-inset-bottom)]`}
+        className={`${lexend.variable} font-lexend antialiased pb-16 lg:pb-0 pb-[env(safe-area-inset-bottom)]`}
       >
         <Suspense fallback={null}>
           <SplashScreen />

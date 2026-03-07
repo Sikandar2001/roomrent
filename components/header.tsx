@@ -24,23 +24,6 @@ function UserIcon() {
   );
 }
 
-function ChevronDown() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      className="h-4 w-4"
-    >
-      <path
-        fillRule="evenodd"
-        d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
-
 function PhoneIcon() {
   return (
     <svg
@@ -53,7 +36,6 @@ function PhoneIcon() {
     </svg>
   );
 }
-
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -100,7 +82,11 @@ export default function Header() {
     <header className="sticky top-0 z-40 w-full border-b border-zinc-200 bg-[#FFF5E1]/90 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 text-zinc-900">
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 text-zinc-900"
+          >
             <div className="relative h-16 w-16 overflow-hidden">
               <Image
                 src="/images/image.png"
@@ -176,7 +162,7 @@ export default function Header() {
                 <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl">
                   <div className="bg-[#eab308]/10 px-4 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-700">User ID</p>
-                    <p className="truncate text-xs font-mono text-zinc-900">{user.uid}</p>
+                    <p className="truncate text-xs text-zinc-900">{user.uid}</p>
                   </div>
                   <Link
                     href="/dashboard/profile"
@@ -252,7 +238,11 @@ export default function Header() {
         <div className="border-t border-zinc-200 bg-[#FFF5E1] lg:hidden">
           <nav className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3">
-              <Link href="/" className="text-sm font-medium text-zinc-800">
+              <Link
+                href="/"
+                onClick={() => setOpen(false)}
+                className="text-sm font-medium text-zinc-800 hover:text-[#113b8f]"
+              >
                 Home
               </Link>
               <form
@@ -277,64 +267,78 @@ export default function Header() {
                   Search
                 </button>
               </form>
-              <Link href="/contact-us" className="text-sm font-medium text-zinc-800">
-                Contact Us
-              </Link>
-              <div className="mt-1 flex w-max items-center gap-2">
+              <div className="mt-2 flex flex-col gap-4">
+                {/* Always show Add Room button prominently on mobile menu - Moved under Search */}
+                <Link
+                  href="/add-room"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center justify-center rounded-md bg-[#113b8f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0d3278]"
+                >
+                  Add Room
+                </Link>
+
                 {user ? (
                   <div className="flex flex-col gap-3">
                     <div className="rounded-md bg-zinc-100 p-2">
-                      <p className="text-[10px] font-medium text-zinc-500 uppercase">User ID</p>
-                      <p className="truncate text-xs text-zinc-900 font-mono w-40">{user.uid}</p>
+                      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-tight">User ID</p>
+                      <p className="truncate text-xs text-zinc-900">{user.uid}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <Link
                         href="/dashboard/profile"
-                        className="rounded-md border border-zinc-200 px-3 py-2 text-center text-sm font-medium text-zinc-700"
+                        onClick={() => setOpen(false)}
+                        className="rounded-md border border-zinc-200 px-3 py-2 text-center text-sm font-medium text-zinc-700 hover:bg-zinc-50"
                       >
                         Profile
                       </Link>
                       <Link
                         href="/dashboard/edit-room"
-                        className="rounded-md border border-zinc-200 px-3 py-2 text-center text-sm font-medium text-zinc-700"
+                        onClick={() => setOpen(false)}
+                        className="rounded-md border border-zinc-200 px-3 py-2 text-center text-sm font-medium text-zinc-700 hover:bg-zinc-50"
                       >
                         Edit Room
                       </Link>
                       <Link
                         href="/dashboard/favourite"
-                        className="rounded-md border border-zinc-200 px-3 py-2 text-center text-sm font-medium text-zinc-700"
+                        onClick={() => setOpen(false)}
+                        className="rounded-md border border-zinc-200 px-3 py-2 text-center text-sm font-medium text-zinc-700 hover:bg-zinc-50"
                       >
                         Favourites
                       </Link>
                       <button
-                        onClick={handleLogout}
-                        className="rounded-md border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600"
+                        onClick={() => {
+                          handleLogout();
+                          setOpen(false);
+                        }}
+                        className="rounded-md border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50"
                       >
                         Logout
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="inline-flex rounded-md border border-[#113b8f] px-4 py-2 text-sm font-semibold text-[#113b8f]"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/add-room"
-                      className="inline-flex rounded-md bg-[#113b8f] px-4 py-2 text-sm font-semibold text-white"
-                    >
-                      Add Room
-                    </Link>
-                  </>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="inline-flex items-center justify-center rounded-md border border-[#113b8f] px-4 py-2.5 text-sm font-semibold text-[#113b8f] hover:bg-[#113b8f]/10"
+                  >
+                    Login
+                  </Link>
                 )}
               </div>
-              <a href="tel:8542898438" className="mt-3 flex items-center gap-2 text-zinc-700">
-                <PhoneIcon />
-                <div className="text-sm hover:underline">8542898438</div>
-              </a>
+              <div className="mt-4 flex items-center justify-center gap-8 border-t border-zinc-200 pt-3">
+                <a href="tel:8542898438" className="flex items-center gap-2 text-zinc-700">
+                  <PhoneIcon />
+                  <div className="text-sm hover:underline">8542898438</div>
+                </a>
+                <Link
+                  href="/contact-us"
+                  onClick={() => setOpen(false)}
+                  className="text-sm font-medium text-zinc-800 hover:text-[#113b8f]"
+                >
+                  Contact Us
+                </Link>
+              </div>
             </div>
           </nav>
         </div>

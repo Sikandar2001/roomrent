@@ -1,14 +1,14 @@
  "use client";
  import Link from "next/link";
  import { usePathname } from "next/navigation";
- import { Home, Search, Heart, BadgeIndianRupee, Crown } from "lucide-react";
+ import { Home, Search, Heart, BadgeIndianRupee, PlusCircle } from "lucide-react";
  
  const items = [
    { label: "Home", href: "/", icon: Home },
    { label: "Search", href: "/#properties", icon: Search },
+   { label: "Add Room", href: "/add-room", icon: PlusCircle },
    { label: "ShortList", href: "/dashboard/favourite", icon: Heart },
    { label: "PropWorth", href: "/contact-us", icon: BadgeIndianRupee },
-   { label: "MB Prime", href: "/signup", icon: Crown },
  ];
  
  export default function MobileNav() {
