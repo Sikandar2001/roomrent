@@ -101,7 +101,7 @@ export default function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 text-zinc-900">
-            <div className="relative h-12 w-12 overflow-hidden">
+            <div className="relative h-16 w-16 overflow-hidden">
               <Image
                 src="/images/image.png"
                 alt="MKSUKO Logo"
@@ -111,8 +111,8 @@ export default function Header() {
               />
             </div>
             <div className="leading-tight">
-              <div className="text-base font-bold tracking-wide">MKSUKO</div>
-              <div className="text-[11px] font-medium text-zinc-600">
+              <div className="text-lg font-bold tracking-wide">MKSUKO</div>
+              <div className="text-[12px] font-medium text-zinc-600">
                 PROPERTY4U
               </div>
             </div>

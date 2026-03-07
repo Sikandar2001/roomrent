@@ -85,7 +85,7 @@ export default function SplashScreen() {
           className="flex items-center gap-3 bg-white px-10 py-5 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover:bg-gray-50 active:scale-95 transition-all"
         >
           <ArrowUpRight className="w-6 h-6 text-black" />
-          <span className="font-black text-black text-xl">Visit site</span>
+          <span className="font-black text-black text-xl">Skip</span>
         </button>
 
         <button
