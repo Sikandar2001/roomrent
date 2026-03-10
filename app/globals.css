@@ -1,0 +1,17 @@
+:root {
+  --background: #FFF5E1;
+  --foreground: #171717;
+}
+
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #FFF5E1;
+  --font-lexend: var(--font-lexend), sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-lexend);
+}
