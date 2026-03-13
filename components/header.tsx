@@ -111,6 +111,7 @@ export default function Header() {
                 src="/images/image.png"
                 alt="MKSUKO Logo"
                 fill
+                sizes="64px"
                 className="object-contain"
                 priority
               />

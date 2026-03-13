@@ -1,9 +1,7 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
-import { db, auth, storage } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp, doc, updateDoc, getFirestore, arrayUnion, setDoc, getDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { useState, useEffect, Suspense, useRef } from "react";
+import { db, auth } from "@/lib/firebase";
+import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, setDoc, getDoc } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
 export const dynamic = "force-dynamic";
 
@@ -76,18 +74,28 @@ function FeaturesPageInner() {
   const [deposit, setDeposit] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [showUploader, setShowUploader] = useState(false);
-  const [files, setFiles] = useState<FileList | null>(null);
+  const [files, setFiles] = useState<File[] | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadMsg, setUploadMsg] = useState<string>("");
   const [uploadType, setUploadType] = useState<"photo" | "video">("photo");
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [existingVideos, setExistingVideos] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (roomId && db) {
+    if (showUploader && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  }, [showUploader]);
+
+  useEffect(() => {
+    if (roomId) {
       const fetchRoom = async () => {
         try {
-          const snap = await getDoc(doc(db!, "rooms", roomId));
-          if (snap.exists()) {
-            const data = snap.data();
+          const res = await fetch(`/api/rooms?id=${roomId}`);
+          if (res.ok) {
+            const data = await res.json();
             setBedrooms(data.bedrooms || "");
             setBathrooms(data.bathrooms || "");
             setBalconies(data.balconies || "");
@@ -100,9 +108,11 @@ function FeaturesPageInner() {
             setSuperUnit(data.superUnit || "Sq-ft");
             setRent(data.rent || "");
             setDeposit(data.deposit || "");
+            setExistingPhotos(data.photos || []);
+            setExistingVideos(data.videos || []);
           }
         } catch (e) {
-          console.error("Failed to fetch room:", e);
+          console.log("Failed to fetch room:", e);
         }
       };
       fetchRoom();
@@ -111,9 +121,7 @@ function FeaturesPageInner() {
 
   const saveToFirestore = async () => {
     try {
-      const draft = JSON.parse(localStorage.getItem("roomDraft") || "{}");
       const base = {
-        ...draft,
         bedrooms,
         bathrooms,
         balconies,
@@ -128,37 +136,20 @@ function FeaturesPageInner() {
         deposit,
         uid: auth?.currentUser?.uid || null,
       };
-      let useDb = db;
-      if (!useDb) {
-        const cfgOk =
-          process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-          process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-          process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-          process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
-        if (!cfgOk) throw new Error("Firebase not ready");
-        const cfg = {
-          apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-          appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
-        };
-        const app = getApps().length ? getApp() : initializeApp(cfg);
-        useDb = getFirestore(app);
-      }
+      
       const id = searchParams.get("id") || localStorage.getItem("roomDocId");
       if (id) {
-        const d = doc(useDb, "rooms", id);
-        await setDoc(d, base, { merge: true });
+        await fetch(`/api/rooms?id=${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(base),
+        });
       }
-      else {
-        const ref = await addDoc(collection(useDb, "rooms"), { ...base, createdAt: serverTimestamp() });
-        localStorage.setItem("roomDocId", ref.id);
-      }
-      localStorage.removeItem("roomDraft");
+      localStorage.removeItem("roomDocId");
       router.push("/");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Save failed");
-      router.push("/");
+      console.log("Save error:", e);
     }
   };
   return (
@@ -356,6 +347,61 @@ function FeaturesPageInner() {
           </div>
           <div className="mt-5 rounded-lg border-2 border-dashed border-zinc-300 p-8">
             <div className="mx-auto max-w-2xl text-center">
+              {/* Show Previews of existing photos/videos */}
+              {(existingPhotos.length > 0 || existingVideos.length > 0) && (
+                <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                  {existingPhotos.map((url, idx) => (
+                    <div key={url} className="relative aspect-square overflow-hidden rounded-lg border border-zinc-200 group">
+                      <img src={url} alt={`Photo ${idx}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const id = searchParams.get("id") || localStorage.getItem("roomDocId");
+                          if (id) {
+                            const newPhotos = existingPhotos.filter((p) => p !== url);
+                            await fetch(`/api/rooms?id=${id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ photos: newPhotos }),
+                            });
+                            setExistingPhotos(newPhotos);
+                          }
+                        }}
+                        className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                  {existingVideos.map((url, idx) => (
+                    <div key={url} className="relative aspect-square overflow-hidden rounded-lg border border-zinc-200 group bg-black flex items-center justify-center">
+                      <video src={url} className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const id = searchParams.get("id") || localStorage.getItem("roomDocId");
+                          if (id) {
+                            const newVideos = existingVideos.filter((v) => v !== url);
+                            await fetch(`/api/rooms?id=${id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ videos: newVideos }),
+                            });
+                            setExistingVideos(newVideos);
+                          }
+                        }}
+                        className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="inline-flex items-center gap-3 rounded-full bg-amber-100 px-6 py-4">
                 <div className="grid place-items-center rounded-full bg-white p-2">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -408,15 +454,42 @@ function FeaturesPageInner() {
                 <div className="mt-4">
                   <input
                     type="file"
+                    ref={fileInputRef}
                     accept={uploadType === "photo" ? "image/*" : "video/*"}
                     multiple
-                    onChange={(e) => setFiles(e.target.files)}
-                    className="w-full"
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        const newFiles = Array.from(e.target.files);
+                        setFiles((prev) => (prev ? [...prev, ...newFiles] : newFiles));
+                      }
+                    }}
+                    className="hidden"
                   />
-                  {files && files.length ? (
-                    <div className="mt-3 max-h-40 overflow-auto rounded border border-zinc-200 p-2 text-xs text-zinc-700">
-                      {Array.from(files).map((f) => (
-                        <div key={f.name} className="truncate">{f.name}</div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 py-8 text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+                    <span className="font-medium">
+                      {files && files.length ? `${files.length} files selected` : "Select Files"}
+                    </span>
+                  </button>
+                          {files && files.length ? (
+                    <div className="mt-3 grid grid-cols-4 gap-2 max-h-60 overflow-auto rounded border border-zinc-200 p-2">
+                      {Array.from(files).map((f, i) => (
+                        <div key={i} className="relative aspect-square bg-zinc-100 rounded overflow-hidden">
+                          {uploadType === "photo" ? (
+                            <img src={URL.createObjectURL(f)} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-[10px] text-zinc-500 break-all p-1">{f.name}</div>
+                          )}
+                          {uploadProgress[f.name] !== undefined && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                              <span className="text-[10px] font-bold text-white">{Math.round(uploadProgress[f.name])}%</span>
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   ) : null}
@@ -430,52 +503,72 @@ function FeaturesPageInner() {
                       try {
                         setUploading(true);
                         setUploadMsg("");
+                        setUploadProgress({});
                         const id = searchParams.get("id") || localStorage.getItem("roomDocId");
-                        let useDb = db;
-                        let useStorage = storage;
-                        if (!useDb || !useStorage) {
-                          const cfgOk =
-                            process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-                            process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-                            process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-                            process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
-                          if (!cfgOk) throw new Error("Firebase not ready");
-                          const cfg = {
-                            apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-                            authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-                            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-                            appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
-                          };
-                          const app = getApps().length ? getApp() : initializeApp(cfg);
-                          useDb = getFirestore(app);
-                          useStorage = getStorage(app);
-                        }
+                        
                         if (!id) throw new Error("Room not initialized");
                         if (!files || !files.length) throw new Error("Select files first");
                         const folder = `rooms/${id}`;
-                        const urls: { photos: string[]; videos: string[] } = { photos: [], videos: [] };
-                        for (const f of Array.from(files)) {
-                          const objectRef = ref(useStorage!, `${folder}/${Date.now()}-${f.name}`);
-                          await uploadBytes(objectRef, f);
-                          const url = await getDownloadURL(objectRef);
+                        const uploadedUrls: string[] = [];
+                        
+                        const uploadPromises = Array.from(files).map(async (f) => {
+                          if (uploadType === "photo" && !f.type.startsWith("image/")) {
+                            return "";
+                          }
+                          if (uploadType === "video" && !f.type.startsWith("video/")) {
+                            return "";
+                          }
+
+                          const formData = new FormData();
+                          formData.append("file", f);
+                          formData.append("folder", folder);
+
+                          const res = await fetch("/api/upload", {
+                            method: "POST",
+                            body: formData,
+                          });
+
+                          if (!res.ok) {
+                            const err = await res.json();
+                            throw new Error(err.error || "Upload failed");
+                          }
+
+                          const data = await res.json();
+                          return data.url;
+                        });
+
+                        const results = await Promise.all(uploadPromises);
+                        const newUrls = results.filter(url => url !== "");
+                        uploadedUrls.push(...newUrls);
+
+                        if (uploadedUrls.length > 0) {
+                          const field = uploadType === "photo" ? "photos" : "videos";
+                          const currentUrls = uploadType === "photo" ? existingPhotos : existingVideos;
+                          const updatedList = [...currentUrls, ...uploadedUrls];
+                          
+                          await fetch(`/api/rooms?id=${id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ [field]: updatedList }),
+                          });
+                          
                           if (uploadType === "photo") {
-                            if (!f.type.startsWith("image/")) continue;
-                            urls.photos.push(url);
+                            setExistingPhotos(updatedList);
                           } else {
-                            if (!f.type.startsWith("video/")) continue;
-                            urls.videos.push(url);
+                            setExistingVideos(updatedList);
                           }
                         }
-                        const target = doc(useDb!, "rooms", id);
-                        const updates: Record<string, unknown> = {};
-                        urls.photos.forEach((u) => (updates.photos = arrayUnion(u)));
-                        urls.videos.forEach((u) => (updates.videos = arrayUnion(u)));
-                        if (updates.photos || updates.videos) {
-                          await updateDoc(target, updates);
-                        }
+
                         setUploadMsg("Upload complete");
-                      } catch (e: unknown) {
-                        setUploadMsg(e instanceof Error ? e.message : "Upload failed");
+                        setTimeout(() => {
+                          setShowUploader(false);
+                          setFiles(null);
+                          setUploadMsg("");
+                          setUploadProgress({});
+                        }, 1500);
+                      } catch (e: any) {
+                        console.error("Upload Error:", e);
+                        setUploadMsg(`Upload failed: ${e.message || "unknown error"}`);
                       } finally {
                         setUploading(false);
                       }

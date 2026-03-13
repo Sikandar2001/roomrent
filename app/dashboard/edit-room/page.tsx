@@ -39,55 +39,51 @@ export default function EditRoomPage() {
   }, []);
 
   useEffect(() => {
-    if (!userId || !db) {
-      Promise.resolve().then(() => {
-        if (!userId) setLoading(false);
-      });
+    if (!userId) {
+      setLoading(false);
       return;
     }
 
-    // Fetch only rooms uploaded by the current user
-    // Removed orderBy to avoid composite index requirement
-    const q = query(
-      collection(db, "rooms"),
-      where("uid", "==", userId)
-    );
+    const fetchRooms = async () => {
+      try {
+        const res = await fetch("/api/rooms");
+        if (res.ok) {
+          const data = await res.json();
+          // Filter by current user uid
+          const filtered = data
+            .filter((v: any) => v.uid === userId)
+            .map((v: any) => ({
+              id: v.id,
+              title: v.title || v.project || "Unnamed Property",
+              city: v.city || "No City",
+              rent: v.rent || 0,
+              photos: v.photos,
+              propertyType: v.propertyType || "Room",
+              createdAt: v.createdAt,
+            }));
+          setRooms(filtered);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const unsub = onSnapshot(q, (snap) => {
-      const fetched = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          title: data.title || data.project || "Unnamed Property",
-          city: data.city || "No City",
-          rent: data.rent || 0,
-          photos: data.photos,
-          propertyType: data.propertyType || "Room",
-          createdAt: data.createdAt, // Keep for sorting
-        };
-      });
-
-      // Sort by createdAt desc in memory
-      fetched.sort((a, b) => {
-        const t1 = a.createdAt?.toDate?.()?.getTime() || 0;
-        const t2 = b.createdAt?.toDate?.()?.getTime() || 0;
-        return t2 - t1;
-      });
-
-      setRooms(fetched);
-      setLoading(false);
-    }, (err) => {
-      console.error("Fetch error:", err);
-      setLoading(false);
-    });
-
-    return () => unsub();
+    fetchRooms();
   }, [userId]);
 
   const handleDelete = async (id: string) => {
-    if (!db || !window.confirm("Are you sure you want to delete this property?")) return;
+    if (!window.confirm("Are you sure you want to delete this property?")) return;
     try {
-      await deleteDoc(doc(db, "rooms", id));
+      const res = await fetch(`/api/rooms?id=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setRooms((prev) => prev.filter((r) => r.id !== id));
+      } else {
+        throw new Error("Delete failed");
+      }
     } catch (e) {
       console.error("Delete failed:", e);
     }

@@ -12,20 +12,21 @@ function AddRoomPageInner() {
   const [ownerType, setOwnerType] = useState<string>("");
   const [propertyType, setPropertyType] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    if (roomId && db) {
+    if (roomId) {
       const fetchRoom = async () => {
         try {
-          const snap = await getDoc(doc(db!, "rooms", roomId));
-          if (snap.exists()) {
-            const data = snap.data();
+          const res = await fetch(`/api/rooms?id=${roomId}`);
+          if (res.ok) {
+            const data = await res.json();
             setOwnerType(data.ownerType || "");
             setPropertyType(data.propertyType || "");
             setPhone(data.phone || "");
           }
         } catch (e) {
-          console.error("Failed to fetch room:", e);
+          console.log("Failed to fetch room:", e);
         }
       };
       fetchRoom();
@@ -33,33 +34,44 @@ function AddRoomPageInner() {
   }, [roomId]);
 
   const saveAndGo = async () => {
+    if (!ownerType || !propertyType || !phone) {
+      setError("Please fill all fields, including your contact number.");
+      return;
+    }
+    if (phone.length < 10) {
+      setError("Please enter a valid 10-digit WhatsApp number.");
+      return;
+    }
+    setError("");
     const draft = { ownerType, propertyType, phone };
     try {
-      if (db) {
-        let id = roomId;
-        if (id) {
-          // Update existing
-          await updateDoc(doc(db, "rooms", id), {
-            ...draft,
-            updatedAt: serverTimestamp(),
-          });
-        } else {
-          // Create new
-          const ref = await addDoc(collection(db, "rooms"), {
+      let id = roomId;
+      if (id) {
+        // Update existing
+        const res = await fetch(`/api/rooms?id=${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(draft),
+        });
+        if (!res.ok) throw new Error("Update failed");
+      } else {
+        // Create new
+        const res = await fetch("/api/rooms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             ...draft,
             uid: auth?.currentUser?.uid || null,
-            createdAt: serverTimestamp(),
-          });
-          id = ref.id;
-        }
-        localStorage.setItem("roomDocId", id);
-        window.location.href = `/add-room/location?id=${id}`;
-      } else {
-        localStorage.setItem("roomDraft", JSON.stringify(draft));
-        window.location.href = "/add-room/location";
+          }),
+        });
+        if (!res.ok) throw new Error("Create failed");
+        const data = await res.json();
+        id = data.id; // Firestore uses id
       }
+      localStorage.setItem("roomDocId", id!);
+      window.location.href = `/add-room/location?id=${id}`;
     } catch (err) {
-      console.error("Save failed:", err);
+      console.log("Save failed:", err);
     }
   };
   return (
@@ -132,14 +144,25 @@ function AddRoomPageInner() {
                   className="h-10 rounded-md border border-zinc-300 px-3 text-sm outline-none ring-blue-600/20 focus:ring-2"
                   placeholder="WhatsApp Number"
                   inputMode="numeric"
+                  maxLength={10}
                   value={phone}
-                  onChange={(e)=>setPhone(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, ""); // Remove non-digits
+                    if (val.length <= 10) {
+                      setPhone(val);
+                    }
+                  }}
                 />
               </div>
               <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
                 Enter your WhatsApp No. to get enquiries from Buyer/Tenant
               </div>
             </div>
+            {error && (
+              <div className="mt-4 rounded-md bg-red-50 p-3 text-xs font-medium text-red-600 border border-red-100">
+                {error}
+              </div>
+            )}
             <button
               onClick={saveAndGo}
               className="mt-5 w-full rounded-full bg-rose-600 px-6 py-3 text-center text-sm font-semibold text-white hover:bg-rose-700"

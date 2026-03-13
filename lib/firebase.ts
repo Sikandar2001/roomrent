@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
-import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 function hasPlaceholders(v: string | undefined) {
   if (!v) return true;
@@ -28,7 +27,6 @@ let app: ReturnType<typeof getApp> | ReturnType<typeof initializeApp> | null =
   null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
-let storage: FirebaseStorage | null = null;
 
 if (allPresent) {
   const firebaseConfig: Record<string, string> = {
@@ -36,15 +34,15 @@ if (allPresent) {
     authDomain: authDomain!,
     projectId: projectId!,
     appId: appId!,
+    storageBucket: storageBucket || `${projectId}.firebasestorage.app`,
   };
-  if (storageBucket) firebaseConfig.storageBucket = storageBucket;
   if (messagingSenderId) firebaseConfig.messagingSenderId = messagingSenderId;
   
   app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
-  storage = getStorage(app);
+  console.log("Firebase initialized");
 }
 
-export { auth, db, storage };
+export { auth, db };
 export default app;

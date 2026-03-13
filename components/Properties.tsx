@@ -10,14 +10,12 @@ import {
   orderBy,
   query,
   Timestamp,
-  getFirestore,
   setDoc,
   doc,
   deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { getApps, getApp, initializeApp } from "firebase/app";
 
 type TabKey = "latest" | "Room" | "Flat" | "PG" | "Plot";
 
@@ -265,80 +263,39 @@ export default function PropertiesSection() {
   };
 
   useEffect(() => {
-    let ignore = false;
-    let unsubscribe: (() => void) | undefined;
-    (async () => {
+    const fetchRooms = async () => {
       try {
-        let useDb = db;
-        if (!useDb) {
-          const cfgOk =
-            process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-            process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-            process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-            process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
-          if (!cfgOk) return;
-          const cfg = {
-            apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-            authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-            appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
-          };
-          const app = getApps().length ? getApp() : initializeApp(cfg);
-          useDb = getFirestore(app);
-        }
-        const qy = query(collection(useDb, "rooms"), orderBy("createdAt", "desc"));
-        unsubscribe = onSnapshot(qy, (snap) => {
-          const num = (v: unknown, def = 0) => {
-            if (typeof v === "number") return v;
-            if (typeof v === "string") {
-              const m = v.match(/\d+/);
-              return m ? Number(m[0]) : def;
-            }
-            return def;
-          };
-          const items: CardData[] = snap.docs.map((d) => {
-            const v = d.data() as Record<string, unknown>;
-            const created =
-              v.createdAt instanceof Timestamp ? v.createdAt.toDate() : new Date();
-            const photos = Array.isArray(v.photos) ? (v.photos as unknown[]).filter((x) => typeof x === "string") as string[] : [];
+        const res = await fetch("/api/rooms");
+        if (res.ok) {
+          const data = await res.json();
+          const items: CardData[] = data.map((v: any) => {
             return {
-              id: d.id,
-              title:
-                typeof v.title === "string" && v.title.length
-                  ? v.title
-                  : typeof v.project === "string" && v.project.length
-                  ? v.project
-                  : "Room",
-              address:
-                typeof v.city === "string" && v.city.length ? v.city : "—",
-              img:
-                photos.length
-                  ? photos[0]
-                  : "https://images.unsplash.com/photo-1501183638710-841dd1904471?w=1200&q=80&auto=format&fit=crop",
-              price:
-                num(v.rent, 0),
+              id: v.id,
+              title: v.title || "Room",
+              address: v.city || "—",
+              img: v.photos?.[0] || "https://images.unsplash.com/photo-1501183638710-841dd1904471?w=1200&q=80&auto=format&fit=crop",
+              price: Number(v.rent) || 0,
               featured: false,
               status: "For Rent",
-              specs: {
-                area: num(v.superArea, num(v.carpetArea, 0)),
-                offices: num(v.bedrooms, 1),
-                baths: num(v.bathrooms, 1),
-                lounge: true,
-                garage: 1,
+              specs: { 
+                area: Number(v.carpetArea) || 0, 
+                offices: Number(v.bedrooms) || 0, 
+                baths: Number(v.bathrooms) || 0, 
+                lounge: true, 
+                garage: 0 
               },
-              date: created.toLocaleDateString(),
-              category: "latest",
-              propertyType: typeof v.propertyType === "string" ? v.propertyType : "",
+              date: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : "Recently",
+              category: "rent",
+              propertyType: v.propertyType || "Room",
             };
           });
-          if (!ignore) setLatest(items);
-        });
-      } catch {}
-    })();
-    return () => {
-      ignore = true;
-      if (unsubscribe) unsubscribe();
+          setLatest(items);
+        }
+      } catch (e) {
+        console.log("Fetch rooms failed:", e);
+      }
     };
+    fetchRooms();
   }, []);
 
   const dataToFilter = latest.length ? latest : CARDS;

@@ -32,7 +32,6 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <SplashScreen />
         </Suspense>
-        <Script src="https://cdn.tailwindcss.com" strategy="beforeInteractive" />
         <Header />
         <Suspense fallback={null}>
           {children}

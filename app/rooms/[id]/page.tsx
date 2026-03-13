@@ -4,8 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 // import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, getFirestore, Timestamp } from "firebase/firestore";
-import { getApps, getApp, initializeApp } from "firebase/app";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 
 type RoomDoc = {
   title?: string;
@@ -38,29 +37,14 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
   useEffect(() => {
     (async () => {
       try {
-        let useDb = db;
-        if (!useDb) {
-          const cfgOk =
-            process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-            process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-            process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-            process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
-          if (!cfgOk) return;
-          const cfg = {
-            apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-            authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-            appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
-          };
-          const app = getApps().length ? getApp() : initializeApp(cfg);
-          useDb = getFirestore(app);
-        }
-        const snap = await getDoc(doc(useDb, "rooms", id));
-        if (snap.exists()) {
-          const v = snap.data() as RoomDoc;
+        const res = await fetch(`/api/rooms?id=${id}`);
+        if (res.ok) {
+          const v = await res.json();
           setData(v);
         }
-      } catch {}
+      } catch (e) {
+        console.log("Fetch room failed:", e);
+      }
     })();
   }, [id]);
 
@@ -74,6 +58,9 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
       : 0;
 
   const nf = new Intl.NumberFormat("en-US");
+
+  const nextImg = () => setIdx((prev) => (prev + 1) % photos.length);
+  const prevImg = () => setIdx((prev) => (prev - 1 + photos.length) % photos.length);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8 bg-[#FFF5E1]">
@@ -96,15 +83,38 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
         <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Left Column: Main Image, Details, Description */}
           <div className="lg:col-span-2 space-y-8">
-            <div className="overflow-hidden rounded-2xl shadow-sm border border-zinc-100">
+            <div className="relative group overflow-hidden rounded-2xl shadow-sm border border-zinc-100">
               <Image
                 src={photos[idx]}
                 alt={data?.project || "Room"}
                 width={1200}
                 height={900}
-                className="h-[300px] w-full object-cover sm:h-[450px]"
+                className="h-[300px] w-full object-cover sm:h-[450px] transition-all duration-500"
                 priority
               />
+              
+              {/* Navigation Arrows */}
+              <button 
+                onClick={prevImg}
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-zinc-800 shadow-md backdrop-blur-sm transition-all hover:bg-white active:scale-90 opacity-0 group-hover:opacity-100"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+              </button>
+              <button 
+                onClick={nextImg}
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 text-zinc-800 shadow-md backdrop-blur-sm transition-all hover:bg-white active:scale-90 opacity-0 group-hover:opacity-100"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+              </button>
+
+              {/* Counter Badge */}
+              <div className="absolute bottom-4 right-4 rounded-full bg-black/50 px-3 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                {idx + 1} / {photos.length}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -155,7 +165,7 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-500">Posted:</span> 
-                    <span className="font-semibold text-zinc-900">{data?.createdAt ? data.createdAt.toDate().toLocaleDateString() : "—"}</span>
+                    <span className="font-semibold text-zinc-900">{data?.createdAt ? (typeof data.createdAt === 'string' ? new Date(data.createdAt).toLocaleDateString() : (data.createdAt as any).toDate?.() ? (data.createdAt as any).toDate().toLocaleDateString() : "—") : "—"}</span>
                   </div>
                 </div>
               </div>
@@ -175,11 +185,11 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
           <div className="space-y-6">
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Photos</h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
-                {photos.slice(0, 4).map((u, i) => (
+              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
+                {photos.map((u, i) => (
                   <button
                     key={u + i}
-                    className={`relative aspect-square overflow-hidden rounded-xl border-2 transition-all ${idx === i ? "border-[#113b8f] ring-2 ring-[#113b8f]/10" : "border-transparent hover:border-zinc-300"}`}
+                    className={`relative aspect-square min-w-[100px] flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all lg:min-w-0 ${idx === i ? "border-[#113b8f] ring-2 ring-[#113b8f]/10" : "border-transparent hover:border-zinc-300"}`}
                     onClick={() => setIdx(i)}
                   >
                     <Image src={u} alt="thumb" fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />

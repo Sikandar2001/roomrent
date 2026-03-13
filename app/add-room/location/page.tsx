@@ -12,37 +12,47 @@ function LocationPageInner() {
   const [project, setProject] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (roomId && db) {
+    if (roomId) {
       const fetchRoom = async () => {
         try {
-          const snap = await getDoc(doc(db!, "rooms", roomId));
-          if (snap.exists()) {
-            const data = snap.data();
+          const res = await fetch(`/api/rooms?id=${roomId}`);
+          if (res.ok) {
+            const data = await res.json();
             setCity(data.city || "");
             setProject(data.project || "");
             setTitle(data.title || "");
             setDescription(data.description || "");
           }
         } catch (e) {
-          console.error("Failed to fetch room:", e);
+          console.log("Failed to fetch room:", e);
         }
       };
       fetchRoom();
     }
   }, [roomId]);
-  const saveDraft = () => {
+  const saveDraft = async (e: React.MouseEvent) => {
+    if (!city || !title) {
+      e.preventDefault();
+      setError("Please fill City and Property Title.");
+      return;
+    }
+    setError("");
     try {
-      const prev = JSON.parse(localStorage.getItem("roomDraft") || "{}");
-      const next = { ...prev, city, project, title, description };
-      localStorage.setItem("roomDraft", JSON.stringify(next));
+      const next = { city, project, title, description };
       const id = roomId || localStorage.getItem("roomDocId");
-      if (roomId) localStorage.setItem("roomDocId", roomId);
-      if (db && id) {
-        updateDoc(doc(db, "rooms", id), { city, project, title, description });
+      if (id) {
+        await fetch(`/api/rooms?id=${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(next),
+        });
       }
-    } catch {}
+    } catch (e) {
+      console.log("Save error:", e);
+    }
   };
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
@@ -51,14 +61,17 @@ function LocationPageInner() {
         <div className="mt-6 space-y-6">
           <div>
             <label htmlFor="city" className="block text-sm font-medium text-zinc-700">
-              City
+              City <span className="text-red-500">*</span>
             </label>
             <input
               id="city"
               placeholder="Enter City"
               className="mt-2 w-full rounded-md border border-zinc-300 bg-[#edf4ff] px-3 py-2 text-sm outline-none ring-blue-600/20 placeholder:text-zinc-400 focus:ring-2"
               value={city}
-              onChange={(e)=>setCity(e.target.value)}
+              onChange={(e) => {
+                setCity(e.target.value);
+                if (e.target.value) setError("");
+              }}
             />
           </div>
           <div>
@@ -75,14 +88,17 @@ function LocationPageInner() {
           </div>
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-zinc-700">
-              Property Title
+              Property Title <span className="text-red-500">*</span>
             </label>
             <input
               id="title"
               placeholder="e.g. Beautiful 2BHK Flat for Rent"
               className="mt-2 w-full border-b border-zinc-300 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
               value={title}
-              onChange={(e)=>setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (e.target.value) setError("");
+              }}
             />
           </div>
           <div>
@@ -98,6 +114,11 @@ function LocationPageInner() {
               onChange={(e)=>setDescription(e.target.value)}
             />
           </div>
+          {error && (
+            <div className="mt-2 text-xs font-medium text-red-600">
+              {error}
+            </div>
+          )}
         </div>
         <div className="mt-8 flex items-center justify-end">
           <Link
