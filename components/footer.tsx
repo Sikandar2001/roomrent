@@ -17,11 +17,10 @@ export default function Footer() {
 
           {/* Left Column */}
           <div className="flex flex-col space-y-5 pt-4 text-[10px] font-bold tracking-[0.2em] uppercase">
-            <Link href="#" className="hover:text-zinc-400">GET SUPPORT</Link>
-            <Link href="#" className="hover:text-zinc-400">FIND A DESIGNER</Link>
-            <Link href="#" className="hover:text-zinc-400">YOUR ACCOUNT</Link>
-            <Link href="#" className="hover:text-zinc-400">BECOME AN AFFILIATE</Link>
-            <Link href="#" className="hover:text-zinc-400">PRIVACY & COOKIE POLICY</Link>
+            <Link href="/contact-us" className="hover:text-zinc-400">GET SUPPORT</Link>
+            <Link href="/contact-us" className="hover:text-zinc-400">FIND A DESIGNER</Link>
+            <Link href="/dashboard/profile" className="hover:text-zinc-400">YOUR ACCOUNT</Link>
+            <Link href="/privacy-policy" className="hover:text-zinc-400">PRIVACY & COOKIE POLICY</Link>
           </div>
 
           {/* Center Column */}
@@ -43,11 +42,11 @@ export default function Footer() {
 
           {/* Right Column */}
           <div className="flex flex-col space-y-5 pt-4 text-[10px] font-bold tracking-[0.2em] uppercase md:items-end">
-            <Link href="#" className="hover:text-zinc-400">ALL PRODUCTS</Link>
-            <Link href="#" className="hover:text-zinc-400">DIVI CHILD THEMES</Link>
-            <Link href="#" className="hover:text-zinc-400">PROPHOTO 7 DESIGNS</Link>
-            <Link href="#" className="hover:text-zinc-400">SHOWIT DESIGNS</Link>
-            <Link href="#" className="hover:text-zinc-400">STATIONERY</Link>
+            <Link href="/#properties" className="hover:text-zinc-400">ALL PRODUCTS</Link>
+            <Link href="/#properties" className="hover:text-zinc-400">DIVI CHILD THEMES</Link>
+            <Link href="/#properties" className="hover:text-zinc-400">PROPHOTO 7 DESIGNS</Link>
+            <Link href="/#properties" className="hover:text-zinc-400">SHOWIT DESIGNS</Link>
+            <Link href="/#properties" className="hover:text-zinc-400">STATIONERY</Link>
           </div>
         </div>
 

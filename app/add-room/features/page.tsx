@@ -46,7 +46,7 @@ function Chip({
       type="button"
       className={`rounded border px-3 py-2 text-sm ${
         active
-          ? "border-rose-300 bg-rose-50 text-rose-700"
+          ? "border-blue-300 bg-blue-50 text-blue-700"
           : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-400"
       }`}
       onClick={onClick}
@@ -72,6 +72,8 @@ function FeaturesPageInner() {
   const [superUnit, setSuperUnit] = useState<string>("Sq-ft");
   const [rent, setRent] = useState<string>("");
   const [deposit, setDeposit] = useState<string>("");
+  const [maintenanceCharge, setMaintenanceCharge] = useState<string>("");
+  const [maintenancePeriod, setMaintenancePeriod] = useState<string>("Monthly");
   const [error, setError] = useState<string>("");
   const [showUploader, setShowUploader] = useState(false);
   const [files, setFiles] = useState<File[] | null>(null);
@@ -108,6 +110,8 @@ function FeaturesPageInner() {
             setSuperUnit(data.superUnit || "Sq-ft");
             setRent(data.rent || "");
             setDeposit(data.deposit || "");
+            setMaintenanceCharge(data.maintenanceCharge || "");
+            setMaintenancePeriod(data.maintenancePeriod || "Monthly");
             setExistingPhotos(data.photos || []);
             setExistingVideos(data.videos || []);
           }
@@ -120,6 +124,11 @@ function FeaturesPageInner() {
   }, [roomId]);
 
   const saveToFirestore = async () => {
+    if (!bedrooms || !bathrooms || !rent || !deposit || !maintenanceCharge) {
+      setError("Please fill all mandatory fields (marked with *).");
+      return;
+    }
+    setError("");
     try {
       const base = {
         bedrooms,
@@ -134,6 +143,8 @@ function FeaturesPageInner() {
         superUnit,
         rent,
         deposit,
+        maintenanceCharge,
+        maintenancePeriod,
         uid: auth?.currentUser?.uid || null,
       };
       
@@ -157,22 +168,33 @@ function FeaturesPageInner() {
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-zinc-900">Property Features</h1>
         <div className="mt-6 space-y-6">
+            {error && (
+              <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-100">
+                {error}
+              </div>
+            )}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">Bedrooms</div>
+              <div className="mb-2 text-sm font-medium text-zinc-700">Bedrooms <span className="text-red-500">*</span></div>
               <div className="flex flex-wrap gap-2">
                 {["1", "2", "3", "4", "5+"].map((o) => (
-                  <Chip key={o} active={bedrooms === o} onClick={() => setBedrooms(o)}>
+                  <Chip key={o} active={bedrooms === o} onClick={() => {
+                    setBedrooms(o);
+                    if (o && bathrooms) setError("");
+                  }}>
                     {o}
                   </Chip>
                 ))}
               </div>
             </div>
             <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">Bathrooms</div>
+              <div className="mb-2 text-sm font-medium text-zinc-700">Bathrooms <span className="text-red-500">*</span></div>
               <div className="flex flex-wrap gap-2">
                 {["1","2","3","3+"].map((o) => (
-                  <Chip key={o} active={bathrooms === o} onClick={() => setBathrooms(o)}>
+                  <Chip key={o} active={bathrooms === o} onClick={() => {
+                    setBathrooms(o);
+                    if (o && bedrooms) setError("");
+                  }}>
                     {o}
                   </Chip>
                 ))}
@@ -259,7 +281,7 @@ function FeaturesPageInner() {
           <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <div className="mb-2 text-sm font-medium text-zinc-700">
-                Monthly Rent
+                Monthly Rent <span className="text-red-500">*</span>
               </div>
               <div className="relative">
                 <span className="pointer-events-none absolute left-2 top-2.5 text-sm text-zinc-500">₹</span>
@@ -267,7 +289,10 @@ function FeaturesPageInner() {
                   placeholder="Enter Total Rent"
                   className="w-full rounded-md border-b border-zinc-300 pl-6 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
                   value={rent}
-                  onChange={(e)=>setRent(e.target.value)}
+                  onChange={(e) => {
+                    setRent(e.target.value);
+                    if (e.target.value && bathrooms && bedrooms && deposit && maintenanceCharge) setError("");
+                  }}
                 />
               </div>
               <label className="mt-3 inline-flex items-center gap-2 text-sm text-zinc-700">
@@ -277,7 +302,7 @@ function FeaturesPageInner() {
             </div>
             <div>
               <div className="mb-2 text-sm font-medium text-zinc-700">
-                Security Amount (optional)
+                Security Amount <span className="text-red-500">*</span>
               </div>
               <div className="relative">
                 <span className="pointer-events-none absolute left-2 top-2.5 text-sm text-zinc-500">₹</span>
@@ -285,13 +310,16 @@ function FeaturesPageInner() {
                   placeholder="Security Amount"
                   className="w-full rounded-md border-b border-zinc-300 pl-6 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
                   value={deposit}
-                  onChange={(e)=>setDeposit(e.target.value)}
+                  onChange={(e) => {
+                    setDeposit(e.target.value);
+                    if (e.target.value && bathrooms && bedrooms && rent && maintenanceCharge) setError("");
+                  }}
                 />
               </div>
             </div>
             <div>
               <div className="mb-2 text-sm font-medium text-zinc-700">
-                Maintenance Charges
+                Maintenance Charges <span className="text-red-500">*</span>
               </div>
               <div className="grid grid-cols-[1fr,140px] gap-2">
                 <div className="relative">
@@ -299,11 +327,20 @@ function FeaturesPageInner() {
                   <input
                     placeholder="Maintenance Charges"
                     className="w-full rounded-md border-b border-zinc-300 pl-6 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
+                    value={maintenanceCharge}
+                    onChange={(e) => {
+                      setMaintenanceCharge(e.target.value);
+                      if (e.target.value && bathrooms && bedrooms && rent && deposit) setError("");
+                    }}
                   />
                 </div>
                 <div>
-                  <div className="mb-2 text-sm font-medium text-zinc-700">per</div>
-                  <select className="w-full rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm">
+                  <div className="mb-2 text-sm font-medium text-zinc-700">per <span className="text-red-500">*</span></div>
+                  <select
+                    className="w-full rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm"
+                    value={maintenancePeriod}
+                    onChange={(e) => setMaintenancePeriod(e.target.value)}
+                  >
                     <option>Monthly</option>
                     <option>Quarterly</option>
                     <option>Yearly</option>
@@ -336,7 +373,7 @@ function FeaturesPageInner() {
                   type="button"
                   className={`border-b-2 pb-2 text-sm ${
                     t === "Others"
-                      ? "border-rose-600 font-medium text-rose-700"
+                      ? "border-blue-600 font-medium text-blue-700"
                       : "border-transparent text-zinc-600 hover:text-zinc-800"
                   }`}
                 >
@@ -402,45 +439,29 @@ function FeaturesPageInner() {
                 </div>
               )}
 
-              <div className="inline-flex items-center gap-3 rounded-full bg-amber-100 px-6 py-4">
-                <div className="grid place-items-center rounded-full bg-white p-2">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M4 5h16a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V6a1 1 0 0 1 1-1z" stroke="#ea580c" strokeWidth="1.5"/>
-                    <path d="M3 14l5-5 5 6 3-3 5 6" stroke="#ea580c" strokeWidth="1.5"/>
-                    <circle cx="9" cy="8" r="1.5" fill="#ea580c"/>
-                  </svg>
+              <div className="flex flex-col items-center gap-6">
+                <div className="flex flex-wrap justify-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadType("photo");
+                      setShowUploader(true);
+                    }}
+                    className="inline-flex items-center rounded-full border-2 border-blue-600 px-6 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                  >
+                    Add Photos Now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadType("video");
+                      setShowUploader(true);
+                    }}
+                    className="inline-flex items-center rounded-full border-2 border-blue-600 px-6 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                  >
+                    Add Videos Now
+                  </button>
                 </div>
-                <div className="text-left">
-                  <div className="text-sm text-amber-900">
-                    <span className="font-semibold">85% of </span>
-                    <span className="font-semibold text-rose-700">Tenants</span> enquire on Properties with Photos
-                  </div>
-                  <div className="text-xs text-amber-900">
-                    Upload Photos & Get upto <span className="font-semibold text-rose-700">10X more Enquiries</span>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUploadType("photo");
-                    setShowUploader(true);
-                  }}
-                  className="inline-flex items-center rounded-full border-2 border-rose-600 px-6 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
-                >
-                  Add Photos Now
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUploadType("video");
-                    setShowUploader(true);
-                  }}
-                  className="ml-3 inline-flex items-center rounded-full border-2 border-rose-600 px-6 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
-                >
-                  Add Videos Now
-                </button>
               </div>
             </div>
           </div>
@@ -597,12 +618,12 @@ function FeaturesPageInner() {
           <button
             type="button"
             onClick={saveToFirestore}
-            className="inline-flex items-center justify-center rounded-md bg-rose-600 px-8 py-3 text-sm font-semibold text-white hover:bg-rose-700"
+            className="inline-flex items-center justify-center rounded-md bg-[#113b8f] px-8 py-3 text-sm font-semibold text-white hover:bg-[#0d3278]"
           >
-            Save &amp; Continue
+            Save & Continue
           </button>
         </div>
-        {error ? <div className="mt-4 text-center text-sm text-rose-600">{error}</div> : null}
+        {error ? <div className="mt-4 text-center text-sm text-blue-600">{error}</div> : null}
       </div>
     </main>
   );

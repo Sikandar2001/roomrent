@@ -207,6 +207,7 @@ export default function PropertiesSection() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const q = (searchParams.get("q") || "").toLowerCase().trim();
+  const locationParam = (searchParams.get("location") || "").toLowerCase().trim();
   const tabParam = searchParams.get("tab") as TabKey | null;
   const [userId, setUserId] = useState<string | null>(null);
   const [visible, setVisible] = useState(6);
@@ -219,7 +220,7 @@ export default function PropertiesSection() {
 
   useEffect(() => {
     setVisible(6);
-  }, [active, q]);
+  }, [active, q, locationParam]);
 
   useEffect(() => {
     if (!auth) return;
@@ -303,11 +304,11 @@ export default function PropertiesSection() {
     active === "latest"
       ? dataToFilter
       : dataToFilter.filter((c) => c.propertyType === active);
-  const filtered = q
+  const filtered = q || locationParam
     ? base.filter(
         (c) =>
-          c.title.toLowerCase().includes(q) ||
-          c.address.toLowerCase().includes(q)
+          (q ? (c.title.toLowerCase().includes(q) || c.address.toLowerCase().includes(q)) : true) &&
+          (locationParam ? c.address.toLowerCase().includes(locationParam) : true)
       )
     : base;
   const toShow = filtered.slice(0, visible);

@@ -1,5 +1,6 @@
 'use client';
 import { useState, lazy, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import CustomPropertyIcon from "@/components/CustomPropertyIcon";
@@ -9,14 +10,19 @@ const Testimonials = lazy(() => import("@/components/Testimonials"));
 const numberFmt = new Intl.NumberFormat("en-US");
 
 export default function Page() {
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(150000);
+  const router = useRouter();
+  const [keyword, setKeyword] = useState("");
+  const [location, setLocation] = useState("");
+  const [type, setType] = useState("");
 
-  const handleMinPrice = (v: number) => {
-    if (v <= maxPrice) setMinPrice(v);
-  };
-  const handleMaxPrice = (v: number) => {
-    if (v >= minPrice) setMaxPrice(v);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (keyword) params.append("q", keyword);
+    if (location) params.append("location", location);
+    if (type) params.append("tab", type);
+    
+    router.push(`/?${params.toString()}#properties`);
   };
 
   return (
@@ -55,7 +61,7 @@ export default function Page() {
               <h2 className="mb-6 text-center text-2xl font-extrabold uppercase tracking-wide text-[#eab308]">
                 Advanced Search
               </h2>
-              <form className="rounded-2xl bg-white/95 p-6 shadow-2xl ring-1 ring-zinc-200 backdrop-blur">
+              <form onSubmit={handleSearch} className="rounded-2xl bg-white/95 p-6 shadow-2xl ring-1 ring-zinc-200 backdrop-blur">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col">
                     <label htmlFor="keyword" className="sr-only">
@@ -66,6 +72,8 @@ export default function Page() {
                       placeholder="Keyword (E.G: 'Office')"
                       className="h-11 w-full rounded-lg border border-zinc-300 px-4 text-sm outline-none ring-blue-600/20 placeholder:text-zinc-400 focus:ring-2"
                       type="text"
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
                     />
                   </div>
                   <div className="flex flex-col">
@@ -75,15 +83,14 @@ export default function Page() {
                     <select
                       id="location"
                       className="h-11 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-4 text-sm outline-none ring-blue-600/20 focus:ring-2"
-                      defaultValue=""
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
                     >
                       <option value="" disabled>
                         Location
                       </option>
-                      <option>New York</option>
-                      <option>San Francisco</option>
-                      <option>Chicago</option>
-                      <option>Los Angeles</option>
+                      <option value="Noida">Noida</option>
+                      <option value="Greater Noida">Greater Noida</option>
                     </select>
                   </div>
                   <div className="flex flex-col">
@@ -93,15 +100,16 @@ export default function Page() {
                     <select
                       id="type"
                       className="h-11 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-4 text-sm outline-none ring-blue-600/20 focus:ring-2"
-                      defaultValue=""
+                      value={type}
+                      onChange={(e) => setType(e.target.value)}
                     >
                       <option value="" disabled>
                         Property Type
                       </option>
-                      <option>House</option>
-                      <option>Apartment</option>
-                      <option>Villa</option>
-                      <option>Office</option>
+                      <option value="House">House</option>
+                      <option value="Apartment">Apartment</option>
+                      <option value="Villa">Villa</option>
+                      <option value="Office">Office</option>
                     </select>
                   </div>
                   <div className="flex flex-col">
@@ -177,34 +185,6 @@ export default function Page() {
                       className="h-11 w-full rounded-lg border border-zinc-300 px-4 text-sm outline-none ring-blue-600/20 placeholder:text-zinc-400 focus:ring-2"
                       type="number"
                       min={0}
-                    />
-                  </div>
-                </div>
-                <div className="mt-5 rounded-xl border border-zinc-200 p-4">
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="font-medium text-zinc-700">Price Range:</span>
-                    <span className="text-zinc-600">
-                      ${numberFmt.format(minPrice)} to ${numberFmt.format(maxPrice)}
-                    </span>
-                  </div>
-                  <div className="relative grid grid-cols-2 gap-3">
-                    <input
-                      type="range"
-                      min={0}
-                      max={150000}
-                      step={1000}
-                      value={minPrice}
-                      onChange={(e) => handleMinPrice(Number(e.target.value))}
-                      className="range w-full accent-[#0f3586]"
-                    />
-                    <input
-                      type="range"
-                      min={0}
-                      max={150000}
-                      step={1000}
-                      value={maxPrice}
-                      onChange={(e) => handleMaxPrice(Number(e.target.value))}
-                      className="range w-full accent-[#0f3586]"
                     />
                   </div>
                 </div>

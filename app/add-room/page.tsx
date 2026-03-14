@@ -34,8 +34,8 @@ function AddRoomPageInner() {
   }, [roomId]);
 
   const saveAndGo = async () => {
-    if (!ownerType || !propertyType || !phone) {
-      setError("Please fill all fields, including your contact number.");
+    if (!phone) {
+      setError("Please enter your contact number.");
       return;
     }
     if (phone.length < 10) {
@@ -134,7 +134,7 @@ function AddRoomPageInner() {
             </div>
             <div className="mt-4">
               <div className="text-xs font-semibold uppercase text-zinc-700">
-                Your contact number
+                Your contact number <span className="text-red-500">*</span>
               </div>
               <div className="mt-2 grid grid-cols-[auto,1fr] gap-2">
                 <select className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm">
@@ -165,7 +165,7 @@ function AddRoomPageInner() {
             )}
             <button
               onClick={saveAndGo}
-              className="mt-5 w-full rounded-full bg-rose-600 px-6 py-3 text-center text-sm font-semibold text-white hover:bg-rose-700"
+              className="mt-5 w-full rounded-full bg-[#113b8f] px-6 py-3 text-center text-sm font-semibold text-white hover:bg-[#0d3278]"
             >
               Start Now
             </button>
