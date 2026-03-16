@@ -308,38 +308,7 @@ export default function Header() {
               >
                 Home
               </Link>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const q = search.trim();
-                  setOpen(false);
-                  router.push(`/?q=${encodeURIComponent(q)}#properties`);
-                }}
-                className="flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-3 py-2"
-              >
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search properties by title ..."
-                  className="w-full rounded-full text-sm outline-none"
-                />
-                <button
-                  type="submit"
-                  className="rounded-full bg-[#113b8f] px-3 py-1.5 text-xs font-semibold text-white"
-                >
-                  Search
-                </button>
-              </form>
               <div className="mt-2 flex flex-col gap-4">
-                {/* Always show Add Room button prominently on mobile menu - Moved under Search */}
-                <Link
-                  href="/add-room"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex items-center justify-center rounded-md bg-[#113b8f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0d3278]"
-                >
-                  Add Room
-                </Link>
-
                 {user ? (
                   <div className="flex flex-col gap-3">
                     <div className="rounded-md bg-zinc-100 p-2">

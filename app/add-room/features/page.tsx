@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense, useRef } from "react";
 import { db, auth } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, setDoc, getDoc } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
+import { X, LogIn } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 const groups = [
@@ -83,6 +84,7 @@ function FeaturesPageInner() {
   const [uploadType, setUploadType] = useState<"photo" | "video">("photo");
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [existingVideos, setExistingVideos] = useState<string[]>([]);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -124,6 +126,10 @@ function FeaturesPageInner() {
   }, [roomId]);
 
   const saveToFirestore = async () => {
+    if (!auth?.currentUser) {
+      setShowLoginPopup(true);
+      return;
+    }
     if (!bedrooms || !bathrooms || !rent || !deposit || !maintenanceCharge) {
       setError("Please fill all mandatory fields (marked with *).");
       return;
@@ -625,6 +631,52 @@ function FeaturesPageInner() {
         </div>
         {error ? <div className="mt-4 text-center text-sm text-blue-600">{error}</div> : null}
       </div>
+
+      {/* Login Popup */}
+      {showLoginPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md animate-in fade-in zoom-in duration-200 rounded-2xl bg-white p-8 shadow-2xl">
+            <button
+              onClick={() => setShowLoginPopup(false)}
+              className="absolute right-4 top-4 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 rounded-full bg-blue-50 p-4 text-[#113b8f]">
+                <LogIn className="h-8 w-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-zinc-900">Login Required</h3>
+              <p className="mt-2 text-zinc-600">
+                You need to log in to your account to post a property. It only takes a minute!
+              </p>
+              
+              <div className="mt-8 flex w-full flex-col gap-3">
+                <button
+                  onClick={() => router.push("/login")}
+                  className="w-full rounded-full bg-[#113b8f] py-3 text-sm font-semibold text-white transition hover:bg-[#0d3278] active:scale-[0.98]"
+                >
+                  Login Now
+                </button>
+                <button
+                  onClick={() => router.push("/signup")}
+                  className="w-full rounded-full border border-zinc-200 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.98]"
+                >
+                  Create an Account
+                </button>
+              </div>
+              
+              <button
+                onClick={() => setShowLoginPopup(false)}
+                className="mt-4 text-xs font-medium text-zinc-400 hover:text-zinc-600"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

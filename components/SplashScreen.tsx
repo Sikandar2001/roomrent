@@ -40,9 +40,7 @@ export default function SplashScreen() {
   if (!isVisible) return null;
 
   const options = [
-    { label: 'ROOM', key: 'Room' },
-    { label: 'FLAT', key: 'Flat' },
-    { label: 'PG', key: 'PG' },
+    { label: 'RENT', key: 'Room' },
     { label: 'PLOT', key: 'Plot' },
   ];
 
@@ -79,23 +77,13 @@ export default function SplashScreen() {
         </div>
       </div>
 
-      <div className="absolute bottom-12 left-12 right-12 flex justify-between items-end">
+      <div className="absolute bottom-12 left-12 right-12 flex justify-end items-end">
         <button
           onClick={() => handleDismiss()}
           className="flex items-center gap-3 bg-white px-10 py-5 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover:bg-gray-50 active:scale-95 transition-all"
         >
           <ArrowUpRight className="w-6 h-6 text-black" />
           <span className="font-black text-black text-xl">Skip</span>
-        </button>
-
-        <button
-          onClick={() => {
-            sessionStorage.removeItem('seenSplash');
-            window.location.reload();
-          }}
-          className="p-6 bg-white rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover:bg-gray-50 active:rotate-180 transition-all duration-500"
-        >
-          <RotateCcw className="w-8 h-8 text-black" />
         </button>
       </div>
     </div>

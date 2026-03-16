@@ -33,7 +33,7 @@ export default function Page() {
             className="relative flex min-h-[70vh] items-end bg-cover bg-center lg:min-h-screen"
             style={{
               backgroundImage:
-                "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 60%), url('https://images.unsplash.com/photo-1502005229762-cf1b2da7c52f?q=80&w=1960&auto=format&fit=crop')",
+                "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 60%), url('/images/room.jpg')",
             }}
           >
             <div className="absolute inset-0" />
@@ -56,12 +56,12 @@ export default function Page() {
               </div>
             </div>
           </div>
-          <div className="flex min-h-[70vh] items-center bg-gradient-to-br from-[#0f3586] to-[#113b8f] p-6 sm:p-10 lg:min-h-screen lg:p-12">
+          <div className="flex min-h-[70vh] items-center bg-[#FFF5E1] p-6 sm:p-10 lg:min-h-screen lg:p-12">
             <div className="w-full">
-              <h2 className="mb-6 text-center text-2xl font-extrabold uppercase tracking-wide text-[#eab308]">
+              <h2 className="mb-6 text-center text-2xl font-extrabold uppercase tracking-wide text-[#113b8f]">
                 Advanced Search
               </h2>
-              <form onSubmit={handleSearch} className="rounded-2xl bg-white/95 p-6 shadow-2xl ring-1 ring-zinc-200 backdrop-blur">
+              <form onSubmit={handleSearch} className="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-zinc-200">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col">
                     <label htmlFor="keyword" className="sr-only">
@@ -106,10 +106,10 @@ export default function Page() {
                       <option value="" disabled>
                         Property Type
                       </option>
-                      <option value="House">House</option>
-                      <option value="Apartment">Apartment</option>
-                      <option value="Villa">Villa</option>
-                      <option value="Office">Office</option>
+                      <option value="Room">Room</option>
+                      <option value="Flat">Flat</option>
+                      <option value="PG">PG</option>
+                      <option value="Plot">Plot</option>
                     </select>
                   </div>
                   <div className="flex flex-col">
@@ -207,15 +207,13 @@ export default function Page() {
               {/* Options Row for ROOM, FLAT, PG, PLOT - Right Side */}
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 {[
-                  { label: 'ROOM', key: 'Room' },
-                  { label: 'FLAT', key: 'Flat' },
-                  { label: 'PG', key: 'PG' },
+                  { label: 'RENT', key: 'Room' },
                   { label: 'PLOT', key: 'Plot' },
                 ].map((opt) => (
                   <Link
                     key={opt.label}
                     href={`/?tab=${opt.key}#properties`}
-                    className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:scale-105 transition-all group border border-white/10 shadow-lg shadow-black/20"
+                    className="flex items-center gap-2 px-6 py-3 bg-[#113b8f] text-white rounded-full hover:scale-105 transition-all group border border-white/10 shadow-lg shadow-black/20"
                   >
                     <div className="relative flex items-center justify-center">
                       <div className="absolute inset-0 bg-white/20 blur-[1px] rounded-full"></div>
@@ -224,11 +222,6 @@ export default function Page() {
                     <span className="text-base font-black tracking-tight uppercase">{opt.label}</span>
                   </Link>
                 ))}
-              </div>
-
-              <div className="mt-6 flex items-center justify-center gap-2 text-xs text-white/70">
-                <Image src="/next.svg" alt="logo" width={16} height={16} />
-                <span>Demo UI for real estate search</span>
               </div>
             </div>
           </div>
