@@ -57,7 +57,7 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
       ? Number(data?.rent)
       : 0;
 
-  const nf = new Intl.NumberFormat("en-US");
+  const nf = new Intl.NumberFormat("en-IN");
 
   const nextImg = () => setIdx((prev) => (prev + 1) % photos.length);
   const prevImg = () => setIdx((prev) => (prev - 1 + photos.length) % photos.length);
@@ -114,6 +114,21 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
               {/* Counter Badge */}
               <div className="absolute bottom-4 right-4 rounded-full bg-black/50 px-3 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
                 {idx + 1} / {photos.length}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Photos</h3>
+              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+                {photos.map((u, i) => (
+                  <button
+                    key={u + i}
+                    className={`relative aspect-square w-24 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all ${idx === i ? "border-[#113b8f] ring-2 ring-[#113b8f]/10" : "border-transparent hover:border-zinc-300"}`}
+                    onClick={() => setIdx(i)}
+                  >
+                    <Image src={u} alt="thumb" fill className="object-cover" sizes="96px" />
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -181,23 +196,8 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
             )}
           </div>
 
-          {/* Right Column: Thumbnails and Contact */}
+          {/* Right Column: Contact Card */}
           <div className="space-y-6">
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Photos</h3>
-              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
-                {photos.map((u, i) => (
-                  <button
-                    key={u + i}
-                    className={`relative aspect-square min-w-[100px] flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all lg:min-w-0 ${idx === i ? "border-[#113b8f] ring-2 ring-[#113b8f]/10" : "border-transparent hover:border-zinc-300"}`}
-                    onClick={() => setIdx(i)}
-                  >
-                    <Image src={u} alt="thumb" fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="sticky top-24 rounded-2xl border border-zinc-200 bg-white p-6 shadow-md ring-1 ring-black/5">
               <div className="mb-6 border-b border-zinc-100 pb-4 text-center">
                 <p className="text-sm font-medium text-zinc-500">Interested in this property?</p>

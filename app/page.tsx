@@ -7,7 +7,7 @@ import CustomPropertyIcon from "@/components/CustomPropertyIcon";
 const PropertiesSection = lazy(() => import("@/components/Properties"));
 const Testimonials = lazy(() => import("@/components/Testimonials"));
 
-const numberFmt = new Intl.NumberFormat("en-US");
+const numberFmt = new Intl.NumberFormat("en-IN");
 
 export default function Page() {
   const router = useRouter();

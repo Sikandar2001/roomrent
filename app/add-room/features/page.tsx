@@ -396,6 +396,30 @@ function FeaturesPageInner() {
                   {existingPhotos.map((url, idx) => (
                     <div key={url} className="relative aspect-square overflow-hidden rounded-lg border border-zinc-200 group">
                       <img src={url} alt={`Photo ${idx}`} className="h-full w-full object-cover" />
+                      
+                      {/* Set as Cover Option */}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const id = searchParams.get("id") || localStorage.getItem("roomDocId");
+                          if (id) {
+                            const newPhotos = [url, ...existingPhotos.filter((p) => p !== url)];
+                            await fetch(`/api/rooms?id=${id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ photos: newPhotos }),
+                            });
+                            setExistingPhotos(newPhotos);
+                          }
+                        }}
+                        className={`absolute left-1 top-1 z-20 rounded-full p-1.5 text-white shadow-lg transition-all ${idx === 0 ? "bg-emerald-500" : "bg-black/40 hover:bg-[#113b8f]"}`}
+                        title={idx === 0 ? "Cover Image" : "Set as Cover"}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                      </button>
+
                       <button
                         type="button"
                         onClick={async () => {
@@ -410,10 +434,16 @@ function FeaturesPageInner() {
                             setExistingPhotos(newPhotos);
                           }
                         }}
-                        className="absolute right-1 top-1 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        className="absolute right-1 top-1 z-20 rounded-full bg-black/40 p-1.5 text-white shadow-lg transition-all hover:bg-red-600"
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
                       </button>
+
+                      {idx === 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/90 py-0.5 text-center text-[10px] font-bold uppercase text-white">
+                          Cover Image
+                        </div>
+                      )}
                     </div>
                   ))}
                   {existingVideos.map((url, idx) => (

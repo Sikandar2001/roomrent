@@ -108,7 +108,7 @@ export default function Header() {
           >
             <div className="relative h-16 w-16 overflow-hidden">
               <Image
-                src="/images/image.png"
+                src="/images/image1234.png"
                 alt="MKSUKO Logo"
                 fill
                 sizes="64px"

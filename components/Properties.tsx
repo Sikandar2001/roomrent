@@ -41,60 +41,7 @@ type CardData = {
   propertyType: string;
 };
 
-const CARDS: CardData[] = [
-  {
-    id: 1,
-    title: "Park Avenue Apartment",
-    address: "45 Regent Street, London, UK",
-    img: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1200&q=80&auto=format&fit=crop",
-    price: 8600,
-    featured: true,
-    status: "For Sale",
-    specs: { area: 4800, offices: 2, baths: 1, lounge: true, garage: 1 },
-    date: "5 Days ago",
-    category: "sale",
-    propertyType: "Flat",
-  },
-  {
-    id: 2,
-    title: "Park Avenue Apartment",
-    address: "45 Regent Street, London, UK",
-    img: "https://images.unsplash.com/photo-1501183638710-841dd1904471?w=1200&q=80&auto=format&fit=crop",
-    price: 8600,
-    featured: false,
-    status: "For Rent",
-    specs: { area: 4800, offices: 2, baths: 1, lounge: true, garage: 1 },
-    date: "5 Days ago",
-    category: "rent",
-    propertyType: "Room",
-  },
-  {
-    id: 3,
-    title: "Modern PG for Students",
-    address: "Oxford Street, London, UK",
-    img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80&auto=format&fit=crop",
-    price: 1200,
-    featured: true,
-    status: "For Rent",
-    specs: { area: 1200, offices: 1, baths: 1, lounge: false, garage: 0 },
-    date: "2 Days ago",
-    category: "rent",
-    propertyType: "PG",
-  },
-  {
-    id: 4,
-    title: "Residential Plot in Suburb",
-    address: "Green Valley, London, UK",
-    img: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&q=80&auto=format&fit=crop",
-    price: 45000,
-    featured: false,
-    status: "For Sale",
-    specs: { area: 5000, offices: 0, baths: 0, lounge: false, garage: 0 },
-    date: "1 Week ago",
-    category: "sale",
-    propertyType: "Plot",
-  },
-];
+const CARDS: CardData[] = [];
 
 function Badge({ children, color }: { children: React.ReactNode; color: "yellow" | "black" }) {
   const styles =
@@ -112,7 +59,7 @@ function Stat({ label }: { label: string }) {
   return <div className="text-xs text-zinc-600">{label}</div>;
 }
 
-const nf = new Intl.NumberFormat("en-US");
+const nf = new Intl.NumberFormat("en-IN");
 
 function Card({
   item,
@@ -162,7 +109,7 @@ function Card({
           <Badge color="yellow">{item.status}</Badge>
         </div>
         <div className="absolute bottom-3 right-3 rounded bg-[#113b8f] px-3 py-1 text-sm font-semibold text-white">
-          ${nf.format(item.price)} Per Month
+          ₹{nf.format(item.price)} Per Month
         </div>
       </div>
       <div className="p-4">
@@ -299,7 +246,7 @@ export default function PropertiesSection() {
     fetchRooms();
   }, []);
 
-  const dataToFilter = latest.length ? latest : CARDS;
+  const dataToFilter = latest;
   const base =
     active === "latest"
       ? dataToFilter
@@ -339,24 +286,36 @@ export default function PropertiesSection() {
             </button>
           ))}
         </div>
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {toShow.map((item) => (
-            <Card
-              key={item.id}
-              item={item}
-              isFavorite={favorites.includes(String(item.id))}
-              onToggle={toggleFavorite}
-            />
-          ))}
-        </div>
-        {filtered.length > visible && (
-          <div className="mt-8 flex justify-center">
-            <button
-              onClick={() => setVisible((v) => v + 6)}
-              className="rounded-full bg-[#113b8f] px-6 py-3 text-sm font-semibold text-white shadow hover:bg-[#0d3278]"
-            >
-              Show More
-            </button>
+        {toShow.length > 0 ? (
+          <>
+            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {toShow.map((item) => (
+                <Card
+                  key={item.id}
+                  item={item}
+                  isFavorite={favorites.includes(String(item.id))}
+                  onToggle={toggleFavorite}
+                />
+              ))}
+            </div>
+            {filtered.length > visible && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => setVisible((v) => v + 6)}
+                  className="rounded-full bg-[#113b8f] px-6 py-3 text-sm font-semibold text-white shadow hover:bg-[#0d3278]"
+                >
+                  Show More
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mt-20 flex flex-col items-center justify-center text-center">
+            <div className="text-4xl text-zinc-400">🏘️</div>
+            <h3 className="mt-4 text-xl font-bold text-zinc-800">No Properties Found</h3>
+            <p className="mt-2 text-zinc-600">
+              We couldn&apos;t find any properties matching your criteria in this section.
+            </p>
           </div>
         )}
       </div>
