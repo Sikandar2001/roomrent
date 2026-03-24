@@ -705,7 +705,7 @@ function FeaturesPageInner() {
                         type="button"
                         onClick={async () => {
                           const id = searchParams.get("id") || localStorage.getItem("roomDocId");
-                          if (id) {
+                          if (id && db) {
                             const newPhotos = [url, ...existingPhotos.filter((p) => p !== url)];
                             await updateDoc(doc(db, "rooms", id), { photos: newPhotos });
                             setExistingPhotos(newPhotos);
@@ -723,7 +723,7 @@ function FeaturesPageInner() {
                         type="button"
                         onClick={async () => {
                           const id = searchParams.get("id") || localStorage.getItem("roomDocId");
-                          if (id) {
+                          if (id && db) {
                             const newPhotos = existingPhotos.filter((p) => p !== url);
                             await updateDoc(doc(db, "rooms", id), { photos: newPhotos });
                             setExistingPhotos(newPhotos);
@@ -751,7 +751,7 @@ function FeaturesPageInner() {
                         type="button"
                         onClick={async () => {
                           const id = searchParams.get("id") || localStorage.getItem("roomDocId");
-                          if (id) {
+                          if (id && db) {
                             const newVideos = existingVideos.filter((v) => v !== url);
                             await updateDoc(doc(db, "rooms", id), { videos: newVideos });
                             setExistingVideos(newVideos);
@@ -883,7 +883,7 @@ function FeaturesPageInner() {
                         const newUrls = results.filter(url => url !== "");
                         uploadedUrls.push(...newUrls);
 
-                        if (uploadedUrls.length > 0) {
+                        if (uploadedUrls.length > 0 && db) {
                           const field = uploadType === "photo" ? "photos" : "videos";
                           const currentUrls = uploadType === "photo" ? existingPhotos : existingVideos;
                           const updatedList = [...currentUrls, ...uploadedUrls];
