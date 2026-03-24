@@ -61,6 +61,7 @@ function LocationPageInner() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(next),
         });
+        router.push(`/add-room/features?id=${id}`);
       }
     } catch (e) {
       console.log("Save error:", e);
@@ -140,13 +141,12 @@ function LocationPageInner() {
           >
             Go Back
           </button>
-          <Link
-            href={roomId ? `/add-room/features?id=${roomId}` : "/add-room/features"}
-            className="inline-flex items-center rounded-md bg-[#113b8f] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0d3278] transition-all active:scale-95"
+          <button
             onClick={saveDraft}
+            className="inline-flex items-center rounded-md bg-[#113b8f] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0d3278] transition-all active:scale-95"
           >
-            Save & Continue
-          </Link>
+            Next
+          </button>
         </div>
       </div>
 

@@ -76,7 +76,7 @@ function AddRoomPageInner() {
         id = data.id; // Firestore uses id
       }
       localStorage.setItem("roomDocId", id!);
-      window.location.href = `/add-room/location?id=${id}`;
+      router.push(`/add-room/location?id=${id}`);
     } catch (err) {
       console.log("Save failed:", err);
     }
@@ -177,7 +177,7 @@ function AddRoomPageInner() {
               onClick={saveAndGo}
               className="mt-5 w-full rounded-full bg-[#113b8f] px-6 py-3 text-center text-sm font-semibold text-white hover:bg-[#0d3278]"
             >
-              Save & Continue
+              Next
             </button>
             <div className="mt-3 text-center text-xs text-zinc-500">
               By continuing, you agree to our terms.
