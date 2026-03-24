@@ -1,31 +1,38 @@
 "use client";
-import { useState, useEffect, Suspense, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { db, auth } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, setDoc, getDoc } from "firebase/firestore";
-import { useRouter, useSearchParams } from "next/navigation";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { X, LogIn } from "lucide-react";
-export const dynamic = "force-dynamic";
+
+function Chip({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-5 py-2 text-sm font-semibold transition-all ${
+        active
+          ? "bg-[#113b8f] text-white shadow-lg shadow-blue-100 ring-2 ring-blue-600 ring-offset-1"
+          : "bg-white text-zinc-700 border border-zinc-200 hover:border-blue-600 hover:text-blue-600 active:scale-95"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
 const groups = [
   {
     label: "Balconies",
-    options: ["0", "1", "2", "3", "3+"],
+    options: ["1", "2", "3", "3+"],
   },
   {
     label: "Floor No.",
-    options: [
-      "Ground",
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "5+",
-    ],
+    options: ["1", "2", "3", "4", "5+"],
   },
   {
     label: "Total Floors",
-    options: ["1","2","3","4","5","5+"],
+    options: ["1", "2", "3", "4", "5+"],
   },
   {
     label: "Furnished Status",
@@ -33,79 +40,121 @@ const groups = [
   },
 ];
 
-function Chip({
-  children,
-  active = false,
-  onClick,
-}: {
-  children: React.ReactNode;
-  active?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`rounded border px-3 py-2 text-sm ${
-        active
-          ? "border-blue-300 bg-blue-50 text-blue-700"
-          : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-400"
-      }`}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-}
+const AREA_UNITS = [
+  "Sq-ft",
+  "Sq.yrd",
+  "Gaj",
+  "Sq.m",
+  "Acres",
+  "Marla",
+  "Cents",
+  "Bigha",
+  "Kottah",
+  "Ground",
+  "Ares",
+  "Biswa",
+  "Guntha",
+  "Aankadam",
+  "Hectares",
+  "Rood",
+  "Chataks",
+  "Perch",
+];
 
 function FeaturesPageInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const roomId = searchParams.get("id");
-  const [bedrooms, setBedrooms] = useState<string>("");
-  const [bathrooms, setBathrooms] = useState<string>("");
-  const [balconies, setBalconies] = useState<string>("");
-  const [floorNo, setFloorNo] = useState<string>("");
-  const [totalFloors, setTotalFloors] = useState<string>("");
-  const [furnishedStatus, setFurnishedStatus] = useState<string>("");
-  const [carpetArea, setCarpetArea] = useState<string>("");
-  const [carpetUnit, setCarpetUnit] = useState<string>("Sq-ft");
-  const [superArea, setSuperArea] = useState<string>("");
-  const [superUnit, setSuperUnit] = useState<string>("Sq-ft");
-  const [rent, setRent] = useState<string>("");
-  const [deposit, setDeposit] = useState<string>("");
-  const [maintenanceCharge, setMaintenanceCharge] = useState<string>("");
-  const [maintenancePeriod, setMaintenancePeriod] = useState<string>("Monthly");
-  const [error, setError] = useState<string>("");
-  const [showUploader, setShowUploader] = useState(false);
-  const [files, setFiles] = useState<File[] | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-  const [uploadMsg, setUploadMsg] = useState<string>("");
-  const [uploadType, setUploadType] = useState<"photo" | "video">("photo");
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [customBedrooms, setCustomBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
+  const [customBathrooms, setCustomBathrooms] = useState("");
+  const [balconies, setBalconies] = useState("");
+  const [customBalconies, setCustomBalconies] = useState("");
+  const [floorNo, setFloorNo] = useState("");
+  const [customFloorNo, setCustomFloorNo] = useState("");
+  const [totalFloors, setTotalFloors] = useState("");
+  const [customTotalFloors, setCustomTotalFloors] = useState("");
+  const [furnishedStatus, setFurnishedStatus] = useState("");
+  const [propertyType, setPropertyType] = useState("");
+  const [plotArea, setPlotArea] = useState("");
+  const [plotUnit, setPlotUnit] = useState("sq.ft.");
+  const [plotLength, setPlotLength] = useState("");
+  const [plotBreadth, setPlotBreadth] = useState("");
+  const [carpetArea, setCarpetArea] = useState("");
+  const [carpetUnit, setCarpetUnit] = useState("Sq-ft");
+  const [superArea, setSuperArea] = useState("");
+  const [superUnit, setSuperUnit] = useState("Sq-ft");
+  const [rent, setRent] = useState("");
+  const [deposit, setDeposit] = useState("");
+  const [maintenanceCharge, setMaintenanceCharge] = useState("");
+  const [maintenancePeriod, setMaintenancePeriod] = useState("Monthly");
+  const [allInclusivePrice, setAllInclusivePrice] = useState(false);
+  const [taxChargesExcluded, setTaxChargesExcluded] = useState(false);
+  const [priceNegotiable, setPriceNegotiable] = useState(false);
+  const [priceUnit, setPriceUnit] = useState("Month");
   const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [existingVideos, setExistingVideos] = useState<string[]>([]);
-  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [showUploader, setShowUploader] = useState(false);
+  const [uploadType, setUploadType] = useState<"photo" | "video">("photo");
+  const [files, setFiles] = useState<File[] | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   useEffect(() => {
-    if (showUploader && fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  }, [showUploader]);
-
-  useEffect(() => {
-    if (roomId) {
+    const id = roomId || localStorage.getItem("roomDocId");
+    if (id) {
       const fetchRoom = async () => {
         try {
-          const res = await fetch(`/api/rooms?id=${roomId}`);
+          const res = await fetch(`/api/rooms?id=${id}`);
           if (res.ok) {
             const data = await res.json();
-            setBedrooms(data.bedrooms || "");
-            setBathrooms(data.bathrooms || "");
-            setBalconies(data.balconies || "");
-            setFloorNo(data.floorNo || "");
-            setTotalFloors(data.totalFloors || "");
+            const b = data.bedrooms;
+            if (["1", "2", "3", "4"].includes(b)) {
+              setBedrooms(b);
+            } else if (b) {
+              setBedrooms("5+");
+              setCustomBedrooms(b);
+            }
+            const bt = data.bathrooms;
+            if (["1", "2", "3"].includes(bt)) {
+              setBathrooms(bt);
+            } else if (bt) {
+              setBathrooms("3+");
+              setCustomBathrooms(bt);
+            }
+            const bl = data.balconies;
+            if (["1", "2", "3"].includes(bl)) {
+              setBalconies(bl);
+            } else if (bl) {
+              setBalconies("3+");
+              setCustomBalconies(bl);
+            }
+            const fn = data.floorNo;
+            if (["1", "2", "3", "4"].includes(fn)) {
+              setFloorNo(fn);
+            } else if (fn) {
+              setFloorNo("5+");
+              setCustomFloorNo(fn);
+            }
+            const tf = data.totalFloors;
+            if (["1", "2", "3", "4"].includes(tf)) {
+              setTotalFloors(tf);
+            } else if (tf) {
+              setTotalFloors("5+");
+              setCustomTotalFloors(tf);
+            }
+
             setFurnishedStatus(data.furnishedStatus || "");
+            setPropertyType(data.propertyType || "");
+            setPlotArea(data.plotArea || "");
+            setPlotUnit(data.plotUnit || "sq.ft.");
+            setPlotLength(data.plotLength || "");
+            setPlotBreadth(data.plotBreadth || "");
             setCarpetArea(data.carpetArea || "");
             setCarpetUnit(data.carpetUnit || "Sq-ft");
             setSuperArea(data.superArea || "");
@@ -114,6 +163,10 @@ function FeaturesPageInner() {
             setDeposit(data.deposit || "");
             setMaintenanceCharge(data.maintenanceCharge || "");
             setMaintenancePeriod(data.maintenancePeriod || "Monthly");
+            setAllInclusivePrice(data.allInclusivePrice || false);
+            setTaxChargesExcluded(data.taxChargesExcluded || false);
+            setPriceNegotiable(data.priceNegotiable || false);
+            setPriceUnit(data.priceUnit || "Month");
             setExistingPhotos(data.photos || []);
             setExistingVideos(data.videos || []);
           }
@@ -130,19 +183,31 @@ function FeaturesPageInner() {
       setShowLoginPopup(true);
       return;
     }
-    if (!bedrooms || !bathrooms || !rent || !deposit || !maintenanceCharge) {
-      setError("Please fill all mandatory fields (marked with *).");
-      return;
+    
+    if (propertyType === "Plot") {
+      if (!plotArea || !rent) {
+        setError("Please fill all mandatory fields (marked with *).");
+        return;
+      }
+    } else {
+      if (!bedrooms || !bathrooms || !rent || !deposit || !maintenanceCharge) {
+        setError("Please fill all mandatory fields (marked with *).");
+        return;
+      }
     }
     setError("");
     try {
       const base = {
-        bedrooms,
-        bathrooms,
-        balconies,
-        floorNo,
-        totalFloors,
+        bedrooms: bedrooms === "5+" ? customBedrooms : bedrooms,
+        bathrooms: bathrooms === "3+" ? customBathrooms : bathrooms,
+        balconies: balconies === "3+" ? customBalconies : balconies,
+        floorNo: floorNo === "5+" ? customFloorNo : floorNo,
+        totalFloors: totalFloors === "5+" ? customTotalFloors : totalFloors,
         furnishedStatus,
+        plotArea,
+        plotUnit,
+        plotLength,
+        plotBreadth,
         carpetArea,
         carpetUnit,
         superArea,
@@ -151,6 +216,13 @@ function FeaturesPageInner() {
         deposit,
         maintenanceCharge,
         maintenancePeriod,
+        allInclusivePrice,
+        taxChargesExcluded,
+        priceNegotiable,
+        priceUnit,
+        photos: existingPhotos,
+        videos: existingVideos,
+        status: "published",
         uid: auth?.currentUser?.uid || null,
       };
       
@@ -169,6 +241,7 @@ function FeaturesPageInner() {
       console.log("Save error:", e);
     }
   };
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -179,183 +252,415 @@ function FeaturesPageInner() {
                 {error}
               </div>
             )}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">Bedrooms <span className="text-red-500">*</span></div>
-              <div className="flex flex-wrap gap-2">
-                {["1", "2", "3", "4", "5+"].map((o) => (
-                  <Chip key={o} active={bedrooms === o} onClick={() => {
-                    setBedrooms(o);
-                    if (o && bathrooms) setError("");
-                  }}>
-                    {o}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">Bathrooms <span className="text-red-500">*</span></div>
-              <div className="flex flex-wrap gap-2">
-                {["1","2","3","3+"].map((o) => (
-                  <Chip key={o} active={bathrooms === o} onClick={() => {
-                    setBathrooms(o);
-                    if (o && bedrooms) setError("");
-                  }}>
-                    {o}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-          </div>
-          {groups.map((g) => (
-            <div key={g.label}>
-              <div className="mb-2 text-sm font-medium text-zinc-700">{g.label}</div>
-              <div className="flex flex-wrap gap-2">
-                {g.options.map((o) => {
-                  const selected =
-                    g.label === "Balconies"
-                      ? balconies === o
-                      : g.label === "Floor No."
-                      ? floorNo === o
-                      : g.label === "Total Floors"
-                      ? totalFloors === o
-                      : g.label === "Furnished Status"
-                      ? furnishedStatus === o
-                      : false;
-                  const click = () => {
-                    if (g.label === "Balconies") setBalconies(o);
-                    else if (g.label === "Floor No.") setFloorNo(o);
-                    else if (g.label === "Total Floors") setTotalFloors(o);
-                    else if (g.label === "Furnished Status") setFurnishedStatus(o);
-                  };
-                  return (
-                    <Chip key={o} active={selected} onClick={click}>
-                      {o}
-                    </Chip>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-10 space-y-2">
-          <h2 className="text-xl font-semibold text-zinc-900">Area</h2>
-          <p className="text-sm text-zinc-600">
-            Provide either Carpet Area or Super Area
-          </p>
-          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">
-                Carpet Area
-              </div>
-              <div className="grid grid-cols-[1fr,120px] gap-2">
-                <input
-                  placeholder="Carpet Area"
-                  className="rounded-md border-b border-zinc-300 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
-                  value={carpetArea}
-                  onChange={(e) => setCarpetArea(e.target.value)}
-                />
-                <select className="rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm" value={carpetUnit} onChange={(e)=>setCarpetUnit(e.target.value)}>
-                  <option>Sq-ft</option>
-                  <option>Sq-m</option>
-                  <option>Sq-yd</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">
-                Super Area
-              </div>
-              <div className="grid grid-cols-[1fr,120px] gap-2">
-                <input
-                  placeholder="Super Area"
-                  className="rounded-md border-b border-zinc-300 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
-                  value={superArea}
-                  onChange={(e) => setSuperArea(e.target.value)}
-                />
-                <select className="rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm" value={superUnit} onChange={(e)=>setSuperUnit(e.target.value)}>
-                  <option>Sq-ft</option>
-                  <option>Sq-m</option>
-                  <option>Sq-yd</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="mt-10">
-          <h2 className="text-xl font-semibold text-zinc-900">Rent/ Lease Details</h2>
-          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">
-                Monthly Rent <span className="text-red-500">*</span>
-              </div>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-2 top-2.5 text-sm text-zinc-500">₹</span>
-                <input
-                  placeholder="Enter Total Rent"
-                  className="w-full rounded-md border-b border-zinc-300 pl-6 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
-                  value={rent}
-                  onChange={(e) => {
-                    setRent(e.target.value);
-                    if (e.target.value && bathrooms && bedrooms && deposit && maintenanceCharge) setError("");
-                  }}
-                />
-              </div>
-              <label className="mt-3 inline-flex items-center gap-2 text-sm text-zinc-700">
-                <input type="checkbox" className="h-4 w-4 rounded border-zinc-300" />
-                Rent Negotiable
-              </label>
-            </div>
-            <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">
-                Security Amount <span className="text-red-500">*</span>
-              </div>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-2 top-2.5 text-sm text-zinc-500">₹</span>
-                <input
-                  placeholder="Security Amount"
-                  className="w-full rounded-md border-b border-zinc-300 pl-6 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
-                  value={deposit}
-                  onChange={(e) => {
-                    setDeposit(e.target.value);
-                    if (e.target.value && bathrooms && bedrooms && rent && maintenanceCharge) setError("");
-                  }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="mb-2 text-sm font-medium text-zinc-700">
-                Maintenance Charges <span className="text-red-500">*</span>
-              </div>
-              <div className="grid grid-cols-[1fr,140px] gap-2">
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-2 top-2.5 text-sm text-zinc-500">₹</span>
+          
+          {propertyType === "Plot" ? (
+            <div className="space-y-8">
+              {/* Plot Area Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-[#113b8f]">Add Area Details <span className="text-red-500">*</span></h2>
+                  <button type="button" className="text-zinc-400 hover:text-zinc-600">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                  </button>
+                </div>
+                <div className="grid grid-cols-[1fr,120px] overflow-hidden rounded-xl border border-zinc-200 bg-white focus-within:border-[#113b8f] focus-within:ring-1 focus-within:ring-[#113b8f]">
                   <input
-                    placeholder="Maintenance Charges"
-                    className="w-full rounded-md border-b border-zinc-300 pl-6 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
-                    value={maintenanceCharge}
-                    onChange={(e) => {
-                      setMaintenanceCharge(e.target.value);
-                      if (e.target.value && bathrooms && bedrooms && rent && deposit) setError("");
-                    }}
+                    placeholder="Plot Area"
+                    className="px-4 py-3 text-sm outline-none placeholder:text-zinc-400"
+                    value={plotArea}
+                    onChange={(e) => setPlotArea(e.target.value)}
+                  />
+                  <select 
+                    className="border-l border-zinc-200 bg-zinc-50 px-3 py-3 text-sm outline-none cursor-pointer"
+                    value={plotUnit}
+                    onChange={(e) => setPlotUnit(e.target.value)}
+                  >
+                    {AREA_UNITS.map((u) => (
+                      <option key={u} value={u.toLowerCase().replace(/\s/g, '-')}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Property Dimensions Section */}
+              <div className="space-y-4">
+                <h2 className="text-lg font-bold text-[#113b8f]">Property Dimensions</h2>
+                <div className="space-y-3">
+                  <input
+                    placeholder="Length of plot (in Ft.)"
+                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none placeholder:text-zinc-400 focus:border-[#113b8f] focus:ring-1 focus:ring-[#113b8f]"
+                    value={plotLength}
+                    onChange={(e) => setPlotLength(e.target.value)}
+                  />
+                  <input
+                    placeholder="Breadth of plot (in Ft.)"
+                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none placeholder:text-zinc-400 focus:border-[#113b8f] focus:ring-1 focus:ring-[#113b8f]"
+                    value={plotBreadth}
+                    onChange={(e) => setPlotBreadth(e.target.value)}
                   />
                 </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <div className="mb-2 text-sm font-medium text-zinc-700">per <span className="text-red-500">*</span></div>
-                  <select
-                    className="w-full rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm"
-                    value={maintenancePeriod}
-                    onChange={(e) => setMaintenancePeriod(e.target.value)}
-                  >
-                    <option>Monthly</option>
-                    <option>Quarterly</option>
-                    <option>Yearly</option>
+                  <div className="mb-2 text-sm font-medium text-zinc-700">Bedrooms <span className="text-red-500">*</span></div>
+                  <div className="flex flex-wrap gap-2">
+                    {["1", "2", "3", "4", "5+"].map((o) => (
+                      <Chip key={o} active={bedrooms === o} onClick={() => {
+                        setBedrooms(o);
+                        if (o !== "5+") setCustomBedrooms("");
+                        if (o && bathrooms) setError("");
+                      }}>
+                        {o}
+                      </Chip>
+                    ))}
+                  </div>
+                  {bedrooms === "5+" && (
+                    <div className="mt-2">
+                      <input
+                        type="number"
+                        placeholder="No. of Bedrooms"
+                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                        value={customBedrooms}
+                        onChange={(e) => setCustomBedrooms(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="mb-2 text-sm font-medium text-zinc-700">Bathrooms <span className="text-red-500">*</span></div>
+                  <div className="flex flex-wrap gap-2">
+                    {["1","2","3","3+"].map((o) => (
+                      <Chip key={o} active={bathrooms === o} onClick={() => {
+                        setBathrooms(o);
+                        if (o !== "3+") setCustomBathrooms("");
+                        if (o && bedrooms) setError("");
+                      }}>
+                        {o}
+                      </Chip>
+                    ))}
+                  </div>
+                  {bathrooms === "3+" && (
+                    <div className="mt-2">
+                      <input
+                        type="number"
+                        placeholder="No. of Bathrooms"
+                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                        value={customBathrooms}
+                        onChange={(e) => setCustomBathrooms(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+              {groups.filter(g => g.label !== 'Floor No.' && g.label !== 'Total Floors').map((g) => (
+                <div key={g.label}>
+                  <div className="mb-2 text-sm font-medium text-zinc-700">{g.label}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {g.options.map((o) => {
+                      const selected =
+                        g.label === "Balconies"
+                          ? balconies === o
+                          : g.label === "Furnished Status"
+                          ? furnishedStatus === o
+                          : false;
+                      const click = () => {
+                        if (g.label === "Balconies") {
+                          setBalconies(o);
+                          if (o !== "3+") setCustomBalconies("");
+                        } else if (g.label === "Furnished Status") {
+                          setFurnishedStatus(o);
+                        }
+                      };
+                      return (
+                        <Chip key={o} active={selected} onClick={click}>
+                          {o}
+                        </Chip>
+                      );
+                    })}
+                  </div>
+                  {g.label === "Balconies" && balconies === "3+" && (
+                    <div className="mt-2">
+                      <input
+                        type="number"
+                        placeholder="No. of Balconies"
+                        className="w-full max-w-xs rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                        value={customBalconies}
+                        onChange={(e) => setCustomBalconies(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <div className="mb-2 text-sm font-medium text-zinc-700">Floor No.</div>
+                  <div className="flex flex-wrap gap-2">
+                    {(groups.find(g => g.label === 'Floor No.')?.options || []).map((o) => (
+                      <Chip key={o} active={floorNo === o} onClick={() => {
+                        setFloorNo(o);
+                        if (o !== "5+") setCustomFloorNo("");
+                      }}>
+                        {o}
+                      </Chip>
+                    ))}
+                  </div>
+                  {floorNo === "5+" && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        placeholder="Floor No. (e.g. 6)"
+                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                        value={customFloorNo}
+                        onChange={(e) => setCustomFloorNo(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="mb-2 text-sm font-medium text-zinc-700">Total Floors</div>
+                  <div className="flex flex-wrap gap-2">
+                    {(groups.find(g => g.label === 'Total Floors')?.options || []).map((o) => (
+                      <Chip key={o} active={totalFloors === o} onClick={() => {
+                        setTotalFloors(o);
+                        if (o !== "5+") setCustomTotalFloors("");
+                      }}>
+                        {o}
+                      </Chip>
+                    ))}
+                  </div>
+                  {totalFloors === "5+" && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        placeholder="Total Floors (e.g. 10)"
+                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                        value={customTotalFloors}
+                        onChange={(e) => setCustomTotalFloors(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        
+        {propertyType !== "Plot" && (
+          <div className="mt-10 space-y-2">
+            <h2 className="text-xl font-semibold text-zinc-900">Area</h2>
+            <p className="text-sm text-zinc-600">
+              Provide either Carpet Area or Super Area
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <div className="mb-2 text-sm font-medium text-zinc-700">
+                  Carpet Area
+                </div>
+                <div className="grid grid-cols-[1fr,120px] gap-2">
+                  <input
+                    placeholder="Carpet Area"
+                    className="rounded-md border-b border-zinc-300 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
+                    value={carpetArea}
+                    onChange={(e) => setCarpetArea(e.target.value)}
+                  />
+                  <select className="rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm" value={carpetUnit} onChange={(e)=>setCarpetUnit(e.target.value)}>
+                    {AREA_UNITS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <div className="mb-2 text-sm font-medium text-zinc-700">
+                  Super Area
+                </div>
+                <div className="grid grid-cols-[1fr,120px] gap-2">
+                  <input
+                    placeholder="Super Area"
+                    className="rounded-md border-b border-zinc-300 px-1 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-600"
+                    value={superArea}
+                    onChange={(e) => setSuperArea(e.target.value)}
+                  />
+                  <select className="rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm" value={superUnit} onChange={(e)=>setSuperUnit(e.target.value)}>
+                    {AREA_UNITS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
             </div>
           </div>
+        )}
+
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold text-zinc-900">Rent/ Lease Details</h2>
+          <div className="mt-6 space-y-6">
+            {propertyType === "Plot" ? (
+              <>
+                {/* Expected Price Section */}
+                <div>
+                  <div className="mb-2 text-sm font-medium text-zinc-700">
+                    Expected Price <span className="text-red-500">*</span>
+                  </div>
+                  <div className="relative max-w-md">
+                    <span className="pointer-events-none absolute left-3 top-3 text-zinc-500 text-lg">₹</span>
+                    <input
+                      placeholder="Enter amount"
+                      className="w-full rounded-xl border border-zinc-200 pl-8 px-4 py-3 text-sm outline-none placeholder:text-zinc-400 focus:border-[#113b8f] focus:ring-1 focus:ring-[#113b8f]"
+                      value={rent}
+                      onChange={(e) => {
+                        setRent(e.target.value);
+                        if (e.target.value) setError("");
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="mt-4 flex flex-wrap gap-6">
+                    <label className="inline-flex items-center gap-2 text-sm text-zinc-700 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="h-5 w-5 rounded border-zinc-300 text-[#113b8f] focus:ring-[#113b8f]" 
+                        checked={allInclusivePrice}
+                        onChange={(e) => setAllInclusivePrice(e.target.checked)}
+                      />
+                      All inclusive price
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm text-zinc-700 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="h-5 w-5 rounded border-zinc-300 text-[#113b8f] focus:ring-[#113b8f]" 
+                        checked={taxChargesExcluded}
+                        onChange={(e) => setTaxChargesExcluded(e.target.checked)}
+                      />
+                      Tax and Govt. charges excluded
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm text-zinc-700 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="h-5 w-5 rounded border-zinc-300 text-[#113b8f] focus:ring-[#113b8f]" 
+                        checked={priceNegotiable}
+                        onChange={(e) => setPriceNegotiable(e.target.checked)}
+                      />
+                      Price Negotiable
+                    </label>
+                  </div>
+                </div>
+
+                {/* Price Unit Section */}
+                <div className="max-w-md">
+                  <div className="mb-2 text-sm font-medium text-zinc-700">
+                    Price Unit (if applicable)
+                  </div>
+                  <select
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#113b8f] focus:ring-1 focus:ring-[#113b8f] cursor-pointer"
+                    value={priceUnit}
+                    onChange={(e) => setPriceUnit(e.target.value)}
+                  >
+                    <option value="Month">Month</option>
+                    <option value="Year">Year</option>
+                    <option value="One-time">One-time</option>
+                    {AREA_UNITS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <div className="mb-2 text-sm font-medium text-zinc-700">
+                      Monthly Rent <span className="text-red-500">*</span>
+                    </div>
+                    <div className="relative border-b border-zinc-300 focus-within:border-blue-600">
+                      <span className="pointer-events-none absolute left-0 top-2 text-sm text-zinc-500">₹</span>
+                      <input
+                        placeholder="Enter Total Rent"
+                        className="w-full bg-transparent pl-4 py-2 text-sm outline-none placeholder:text-zinc-400"
+                        value={rent}
+                        onChange={(e) => {
+                          setRent(e.target.value);
+                          if (e.target.value && deposit && maintenanceCharge) setError("");
+                        }}
+                      />
+                    </div>
+                    <label className="mt-3 inline-flex items-center gap-2 text-sm text-zinc-700 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="h-4 w-4 rounded border-zinc-300" 
+                        checked={priceNegotiable}
+                        onChange={(e) => setPriceNegotiable(e.target.checked)}
+                      />
+                      Rent Negotiable
+                    </label>
+                  </div>
+                  <div>
+                    <div className="mb-2 text-sm font-medium text-zinc-700">
+                      Security Amount <span className="text-red-500">*</span>
+                    </div>
+                    <div className="relative border-b border-zinc-300 focus-within:border-blue-600">
+                      <span className="pointer-events-none absolute left-0 top-2 text-sm text-zinc-500">₹</span>
+                      <input
+                        placeholder="Security Amount"
+                        className="w-full bg-transparent pl-4 py-2 text-sm outline-none placeholder:text-zinc-400"
+                        value={deposit}
+                        onChange={(e) => {
+                          setDeposit(e.target.value);
+                          if (e.target.value && rent && maintenanceCharge) setError("");
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 text-sm font-medium text-zinc-700">
+                    Maintenance Charges <span className="text-red-500">*</span>
+                  </div>
+                  <div className="max-w-md relative border-b border-zinc-300 focus-within:border-blue-600">
+                    <span className="pointer-events-none absolute left-0 top-2 text-sm text-zinc-500">₹</span>
+                    <input
+                      placeholder="Maintenance Charges"
+                      className="w-full bg-transparent pl-4 py-2 text-sm outline-none placeholder:text-zinc-400"
+                      value={maintenanceCharge}
+                      onChange={(e) => {
+                        setMaintenanceCharge(e.target.value);
+                        if (e.target.value && rent && deposit) setError("");
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="max-w-md">
+                  <div className="mb-2 text-sm font-medium text-zinc-700">per <span className="text-red-500">*</span></div>
+                  <select
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600"
+                    value={maintenancePeriod}
+                    onChange={(e) => setMaintenancePeriod(e.target.value)}
+                  >
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Yearly">Yearly</option>
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
         </div>
+
         <div className="mt-10">
           <h2 className="text-xl font-semibold text-zinc-900">Photos</h2>
           <p className="mt-1 text-sm text-zinc-600">
@@ -390,25 +695,19 @@ function FeaturesPageInner() {
           </div>
           <div className="mt-5 rounded-lg border-2 border-dashed border-zinc-300 p-8">
             <div className="mx-auto max-w-2xl text-center">
-              {/* Show Previews of existing photos/videos */}
               {(existingPhotos.length > 0 || existingVideos.length > 0) && (
                 <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                   {existingPhotos.map((url, idx) => (
                     <div key={url} className="relative aspect-square overflow-hidden rounded-lg border border-zinc-200 group">
                       <img src={url} alt={`Photo ${idx}`} className="h-full w-full object-cover" />
                       
-                      {/* Set as Cover Option */}
                       <button
                         type="button"
                         onClick={async () => {
                           const id = searchParams.get("id") || localStorage.getItem("roomDocId");
                           if (id) {
                             const newPhotos = [url, ...existingPhotos.filter((p) => p !== url)];
-                            await fetch(`/api/rooms?id=${id}`, {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ photos: newPhotos }),
-                            });
+                            await updateDoc(doc(db, "rooms", id), { photos: newPhotos });
                             setExistingPhotos(newPhotos);
                           }
                         }}
@@ -426,11 +725,7 @@ function FeaturesPageInner() {
                           const id = searchParams.get("id") || localStorage.getItem("roomDocId");
                           if (id) {
                             const newPhotos = existingPhotos.filter((p) => p !== url);
-                            await fetch(`/api/rooms?id=${id}`, {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ photos: newPhotos }),
-                            });
+                            await updateDoc(doc(db, "rooms", id), { photos: newPhotos });
                             setExistingPhotos(newPhotos);
                           }
                         }}
@@ -458,11 +753,7 @@ function FeaturesPageInner() {
                           const id = searchParams.get("id") || localStorage.getItem("roomDocId");
                           if (id) {
                             const newVideos = existingVideos.filter((v) => v !== url);
-                            await fetch(`/api/rooms?id=${id}`, {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ videos: newVideos }),
-                            });
+                            await updateDoc(doc(db, "rooms", id), { videos: newVideos });
                             setExistingVideos(newVideos);
                           }
                         }}
@@ -501,6 +792,7 @@ function FeaturesPageInner() {
               </div>
             </div>
           </div>
+
           {showUploader && (
             <div className="fixed inset-0 z-50 grid place-items-center bg-black/50">
               <div className="w-[90vw] max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
@@ -532,7 +824,7 @@ function FeaturesPageInner() {
                       {files && files.length ? `${files.length} files selected` : "Select Files"}
                     </span>
                   </button>
-                          {files && files.length ? (
+                  {files && files.length ? (
                     <div className="mt-3 grid grid-cols-4 gap-2 max-h-60 overflow-auto rounded border border-zinc-200 p-2">
                       {Array.from(files).map((f, i) => (
                         <div key={i} className="relative aspect-square bg-zinc-100 rounded overflow-hidden">
@@ -561,7 +853,7 @@ function FeaturesPageInner() {
                         setUploading(true);
                         setUploadMsg("");
                         setUploadProgress({});
-                        const id = searchParams.get("id") || localStorage.getItem("roomDocId");
+                        const id = roomId || localStorage.getItem("roomDocId");
                         
                         if (!id) throw new Error("Room not initialized");
                         if (!files || !files.length) throw new Error("Select files first");
@@ -569,13 +861,6 @@ function FeaturesPageInner() {
                         const uploadedUrls: string[] = [];
                         
                         const uploadPromises = Array.from(files).map(async (f) => {
-                          if (uploadType === "photo" && !f.type.startsWith("image/")) {
-                            return "";
-                          }
-                          if (uploadType === "video" && !f.type.startsWith("video/")) {
-                            return "";
-                          }
-
                           const formData = new FormData();
                           formData.append("file", f);
                           formData.append("folder", folder);
@@ -603,11 +888,7 @@ function FeaturesPageInner() {
                           const currentUrls = uploadType === "photo" ? existingPhotos : existingVideos;
                           const updatedList = [...currentUrls, ...uploadedUrls];
                           
-                          await fetch(`/api/rooms?id=${id}`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ [field]: updatedList }),
-                          });
+                          await updateDoc(doc(db, "rooms", id), { [field]: updatedList });
                           
                           if (uploadType === "photo") {
                             setExistingPhotos(updatedList);
@@ -650,7 +931,14 @@ function FeaturesPageInner() {
             </div>
           )}
         </div>
-        <div className="mt-10 flex justify-center">
+        <div className="mt-10 flex items-center justify-center gap-4">
+          <button
+            type="button"
+            onClick={() => router.push(`/add-room/location?id=${roomId || localStorage.getItem("roomDocId")}`)}
+            className="inline-flex items-center justify-center rounded-md border border-zinc-300 bg-white px-8 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+          >
+            Go Back
+          </button>
           <button
             type="button"
             onClick={saveToFirestore}

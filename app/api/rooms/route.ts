@@ -9,6 +9,7 @@ import {
   updateDoc, 
   deleteDoc, 
   query, 
+  where,
   orderBy, 
   serverTimestamp,
   Timestamp
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const statusParam = searchParams.get("status");
 
     if (id) {
       const docRef = doc(db, "rooms", id);
@@ -45,7 +47,7 @@ export async function GET(request: Request) {
     const q = query(roomsRef, orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     
-    const rooms = querySnapshot.docs.map(doc => {
+    let rooms = querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -54,6 +56,17 @@ export async function GET(request: Request) {
         updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : data.updatedAt,
       };
     });
+
+    // Filter by status if provided (in-memory to avoid index requirement)
+    if (statusParam) {
+      rooms = rooms.filter((room: any) => {
+        // If status is 'published', show rooms that are 'published' OR have no status (old data)
+        if (statusParam === "published") {
+          return room.status === "published" || !room.status;
+        }
+        return room.status === statusParam;
+      });
+    }
     
     return NextResponse.json(rooms);
   } catch (error: any) {
@@ -71,6 +84,7 @@ export async function POST(request: Request) {
     const roomsRef = collection(db, "rooms");
     const docRef = await addDoc(roomsRef, {
       ...data,
+      status: "draft",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

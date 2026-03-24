@@ -2,9 +2,10 @@
 import { useEffect, useState, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
-// import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
+import { useRouter } from "next/navigation";
+import { db, auth } from "@/lib/firebase";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
+import { onAuthStateChanged, type User } from "firebase/auth";
 
 type RoomDoc = {
   title?: string;
@@ -20,19 +21,39 @@ type RoomDoc = {
   balconies?: number | string;
   totalFloors?: number | string;
   floorNo?: number | string;
+  carpetUnit?: string;
+  superUnit?: string;
   furnishedStatus?: string;
   propertyType?: string;
+  plotArea?: number | string;
+  plotUnit?: string;
+  plotLength?: number | string;
+  plotBreadth?: number | string;
   ownerType?: string;
+  allInclusivePrice?: boolean;
+  taxChargesExcluded?: boolean;
+  priceNegotiable?: boolean;
+  priceUnit?: string;
   phone?: string;
   photos?: string[];
+  videos?: string[];
   createdAt?: Timestamp;
 };
 
 export default function RoomDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  // const router = useRouter();
+  const router = useRouter();
   const [data, setData] = useState<RoomDoc | null>(null);
   const [idx, setIdx] = useState(0);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (!auth) return;
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -76,9 +97,30 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
             <p className="mt-1 text-sm text-zinc-600">{data?.city || "—"}</p>
           </div>
           <div className="mt-2 inline-block w-fit rounded bg-[#113b8f] px-4 py-2 text-lg font-bold text-white md:mt-0">
-            ₹{nf.format(price)} <span className="text-xs font-normal opacity-80">/ month</span>
+            ₹{nf.format(price)} <span className="text-xs font-normal opacity-80">/ {data?.priceUnit || "month"}</span>
           </div>
         </div>
+        
+        {/* Pricing Badges */}
+        {(data?.allInclusivePrice || data?.taxChargesExcluded || data?.priceNegotiable) && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {data.allInclusivePrice && (
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase text-emerald-700 border border-emerald-100">
+                All Inclusive
+              </span>
+            )}
+            {data.taxChargesExcluded && (
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase text-amber-700 border border-amber-100">
+                Tax Excluded
+              </span>
+            )}
+            {data.priceNegotiable && (
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold uppercase text-blue-700 border border-blue-100">
+                Negotiable
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Left Column: Main Image, Details, Description */}
@@ -132,40 +174,76 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
               </div>
             </div>
 
+            {data?.videos && data.videos.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Videos</h3>
+                <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+                  {data.videos.map((v, i) => (
+                    <div key={v + i} className="relative aspect-square w-48 flex-shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
+                      <video src={v} controls className="h-full w-full object-contain" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="space-y-4 rounded-xl border border-zinc-100 bg-zinc-50/50 p-5">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Basic Info</h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Carpet Area:</span> 
-                    <span className="font-semibold text-zinc-900">{data?.carpetArea || data?.superArea || "—"} sq ft</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Bedrooms:</span> 
-                    <span className="font-semibold text-zinc-900">{data?.bedrooms || "—"}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Bathrooms:</span> 
-                    <span className="font-semibold text-zinc-900">{data?.bathrooms || "—"}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Balconies:</span> 
-                    <span className="font-semibold text-zinc-900">{data?.balconies || "—"}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Floor:</span> 
-                    <span className="font-semibold text-zinc-900">{data?.floorNo || "—"} / {data?.totalFloors || "—"}</span>
-                  </div>
+                  {data?.propertyType === "Plot" ? (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500">Plot Area:</span> 
+                        <span className="font-semibold text-zinc-900">
+                          {data?.plotArea ? `${data.plotArea} ${data.plotUnit || "sq.ft."}` : "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500">Dimensions:</span> 
+                        <span className="font-semibold text-zinc-900">
+                          {data?.plotLength && data?.plotBreadth ? `${data.plotLength} x ${data.plotBreadth} Ft.` : "—"}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500">Carpet Area:</span> 
+                        <span className="font-semibold text-zinc-900">
+                          {data?.carpetArea ? `${data.carpetArea} ${data.carpetUnit || "Sq-ft"}` : data?.superArea ? `${data.superArea} ${data.superUnit || "Sq-ft"}` : "—"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500">Bedrooms:</span> 
+                        <span className="font-semibold text-zinc-900">{data?.bedrooms || "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500">Bathrooms:</span> 
+                        <span className="font-semibold text-zinc-900">{data?.bathrooms || "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500">Balconies:</span> 
+                        <span className="font-semibold text-zinc-900">{data?.balconies || "—"}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-500">Floor:</span> 
+                        <span className="font-semibold text-zinc-900">{data?.floorNo || "—"} / {data?.totalFloors || "—"}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-4 rounded-xl border border-zinc-100 bg-zinc-50/50 p-5">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Property Details</h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-500">Furnished Status:</span> 
-                    <span className="font-semibold text-zinc-900">{data?.furnishedStatus || "—"}</span>
-                  </div>
+                  {data?.propertyType !== "Plot" && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-500">Furnished Status:</span> 
+                      <span className="font-semibold text-zinc-900">{data?.furnishedStatus || "—"}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-500">Property Type:</span> 
                     <span className="font-semibold text-zinc-900">{data?.propertyType || "—"}</span>
@@ -203,7 +281,14 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
                 <p className="text-sm font-medium text-zinc-500">Interested in this property?</p>
               </div>
               <div className="flex flex-col gap-3">
-                {data?.phone ? (
+                {!user ? (
+                  <Link 
+                    href="/login" 
+                    className="flex items-center justify-center rounded-xl bg-rose-600 py-4 text-sm font-bold text-white shadow-lg shadow-rose-200 transition-all hover:bg-rose-700 active:scale-95"
+                  >
+                    Contact Owner
+                  </Link>
+                ) : data?.phone ? (
                   <a 
                     href={`tel:${data.phone}`}
                     className="flex items-center justify-center gap-2 rounded-xl bg-rose-600 py-4 text-sm font-bold text-white shadow-lg shadow-rose-200 transition-all hover:bg-rose-700 active:scale-95"
@@ -214,12 +299,12 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
                     Contact Owner
                   </a>
                 ) : (
-                  <Link 
-                    href="/login" 
-                    className="flex items-center justify-center rounded-xl bg-rose-600 py-4 text-sm font-bold text-white shadow-lg shadow-rose-200 transition-all hover:bg-rose-700 active:scale-95"
+                  <button 
+                    disabled
+                    className="flex items-center justify-center rounded-xl bg-rose-400 py-4 text-sm font-bold text-white transition-all cursor-not-allowed"
                   >
-                    Contact Owner
-                  </Link>
+                    Phone not available
+                  </button>
                 )}
                 <button className="flex items-center justify-center rounded-xl border border-zinc-200 py-4 text-sm font-bold text-zinc-800 transition-all hover:bg-zinc-50 active:scale-95">
                   Download Brochure

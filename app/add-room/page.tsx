@@ -177,7 +177,7 @@ function AddRoomPageInner() {
               onClick={saveAndGo}
               className="mt-5 w-full rounded-full bg-[#113b8f] px-6 py-3 text-center text-sm font-semibold text-white hover:bg-[#0d3278]"
             >
-              Start Now
+              Save & Continue
             </button>
             <div className="mt-3 text-center text-xs text-zinc-500">
               By continuing, you agree to our terms.

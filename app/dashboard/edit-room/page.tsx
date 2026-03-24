@@ -21,6 +21,7 @@ type Room = {
   city: string;
   rent: string | number;
   photos?: string[];
+  videos?: string[];
   propertyType: string;
   createdAt?: Timestamp;
 };
@@ -58,6 +59,7 @@ export default function EditRoomPage() {
               city: v.city || "No City",
               rent: v.rent || 0,
               photos: v.photos,
+              videos: v.videos,
               propertyType: v.propertyType || "Room",
               createdAt: v.createdAt,
             }));

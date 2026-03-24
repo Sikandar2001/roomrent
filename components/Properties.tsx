@@ -213,7 +213,7 @@ export default function PropertiesSection() {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch("/api/rooms");
+        const res = await fetch("/api/rooms?status=published");
         if (res.ok) {
           const data = await res.json();
           const items: CardData[] = data.map((v: any) => {

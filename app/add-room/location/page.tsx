@@ -132,13 +132,20 @@ function LocationPageInner() {
             </div>
           )}
         </div>
-        <div className="mt-8 flex items-center justify-end">
+        <div className="mt-8 flex items-center justify-end gap-4">
+          <button
+            type="button"
+            onClick={() => router.push(`/add-room?id=${roomId || localStorage.getItem("roomDocId")}`)}
+            className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-6 py-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+          >
+            Go Back
+          </button>
           <Link
             href={roomId ? `/add-room/features?id=${roomId}` : "/add-room/features"}
             className="inline-flex items-center rounded-md bg-[#113b8f] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0d3278] transition-all active:scale-95"
             onClick={saveDraft}
           >
-            Next
+            Save & Continue
           </Link>
         </div>
       </div>
