@@ -34,6 +34,7 @@ type RoomDoc = {
   taxChargesExcluded?: boolean;
   priceNegotiable?: boolean;
   priceUnit?: string;
+  listingType?: string;
   phone?: string;
   photos?: string[];
   videos?: string[];
@@ -97,7 +98,7 @@ export default function RoomDetail({ params }: { params: Promise<{ id: string }>
             <p className="mt-1 text-sm text-zinc-600">{data?.city || "—"}</p>
           </div>
           <div className="mt-2 inline-block w-fit rounded bg-[#113b8f] px-4 py-2 text-lg font-bold text-white md:mt-0">
-            ₹{nf.format(price)} <span className="text-xs font-normal opacity-80">/ {data?.priceUnit || "month"}</span>
+            ₹{nf.format(price)} <span className="text-xs font-normal opacity-80">{data?.listingType === "Sell" ? (data?.priceUnit ? `/ ${data.priceUnit}` : "") : `/ ${data?.priceUnit || "month"}`}</span>
           </div>
         </div>
         

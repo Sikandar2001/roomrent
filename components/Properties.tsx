@@ -35,10 +35,12 @@ type CardData = {
   price: number;
   featured: boolean;
   status: string;
-  specs: { area: number; offices: number; baths: number; lounge: boolean; garage: number };
+  specs: { area: number; offices: number; baths: number; balconies: string | number; furnished: string };
   date: string;
   category: string;
   propertyType: string;
+  priceUnit?: string;
+  listingType?: string;
 };
 
 const CARDS: CardData[] = [];
@@ -106,10 +108,10 @@ function Card({
         </Link>
         <div className="absolute left-3 top-3 flex items-center gap-2">
           {item.featured && <Badge color="black">Featured</Badge>}
-          <Badge color="yellow">{item.status}</Badge>
+          <Badge color="yellow">{item.listingType === "Sell" ? "For Sale" : "For Rent"}</Badge>
         </div>
         <div className="absolute bottom-3 right-3 rounded bg-[#113b8f] px-3 py-1 text-sm font-semibold text-white">
-          ₹{nf.format(item.price)} Per Month
+          ₹{nf.format(item.price)} {item.listingType === "Sell" ? (item.priceUnit ? `/${item.priceUnit}` : "") : (item.priceUnit ? `Per ${item.priceUnit}` : "Per Month")}
         </div>
       </div>
       <div className="p-4">
@@ -117,10 +119,18 @@ function Card({
         <div className="mt-1 text-sm text-zinc-600">{item.address}</div>
         <div className="mt-3 grid grid-cols-2 gap-2 text-zinc-700 sm:grid-cols-3">
           <Stat label={`${nf.format(item.specs.area)} sq ft`} />
-          <Stat label={`${item.specs.offices} Office Rooms`} />
-          <Stat label={`${item.specs.baths} Bathroom`} />
-          <Stat label={`TV Lounge`} />
-          <Stat label={`${item.specs.garage} Garage`} />
+          {item.propertyType !== "Plot" && item.specs.offices > 0 && (
+            <Stat label={`${item.specs.offices} ${item.specs.offices > 1 ? "Bedrooms" : "Bedroom"}`} />
+          )}
+          {item.propertyType !== "Plot" && item.specs.baths > 0 && (
+            <Stat label={`${item.specs.baths} ${item.specs.baths > 1 ? "Bathrooms" : "Bathroom"}`} />
+          )}
+          {item.propertyType !== "Plot" && Number(item.specs.balconies) > 0 && (
+            <Stat label={`${item.specs.balconies} ${Number(item.specs.balconies) > 1 ? "Balconies" : "Balcony"}`} />
+          )}
+          {item.propertyType !== "Plot" && item.specs.furnished && (
+            <Stat label={`${item.specs.furnished}`} />
+          )}
         </div>
       </div>
       <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50 px-4 py-2 text-xs text-zinc-600">
@@ -223,18 +233,20 @@ export default function PropertiesSection() {
               address: v.city || "—",
               img: v.photos?.[0] || "https://images.unsplash.com/photo-1501183638710-841dd1904471?w=1200&q=80&auto=format&fit=crop",
               price: Number(v.rent) || 0,
-              featured: false,
-              status: "For Rent",
+              featured: !!v.featured,
+              status: v.listingType === "Sell" ? "For Sale" : "For Rent",
               specs: { 
-                area: Number(v.carpetArea) || 0, 
+                area: Number(v.carpetArea) || Number(v.superArea) || Number(v.plotArea) || 0, 
                 offices: Number(v.bedrooms) || 0, 
                 baths: Number(v.bathrooms) || 0, 
-                lounge: true, 
-                garage: 0 
+                balconies: v.balconies || 0,
+                furnished: v.furnishedStatus || "Unfurnished"
               },
               date: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : "Recently",
-              category: "rent",
+              category: v.listingType === "Sell" ? "sell" : "rent",
               propertyType: v.propertyType || "Room",
+              priceUnit: v.priceUnit,
+              listingType: v.listingType,
             };
           });
           setLatest(items);
