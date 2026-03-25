@@ -13,6 +13,7 @@ function AddRoomPageInner() {
   const roomId = searchParams.get("id");
   const [ownerType, setOwnerType] = useState<string>("");
   const [propertyType, setPropertyType] = useState<string>("");
+  const [listingType, setListingType] = useState<string>(""); // Sell or Rent
   const [phone, setPhone] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -26,6 +27,7 @@ function AddRoomPageInner() {
             const data = await res.json();
             setOwnerType(data.ownerType || "");
             setPropertyType(data.propertyType || "");
+            setListingType(data.listingType || "");
             setPhone(data.phone || "");
           }
         } catch (e) {
@@ -45,12 +47,16 @@ function AddRoomPageInner() {
       setError("Please fill all mandatory fields (marked with *).");
       return;
     }
+    if (propertyType === "Flat" && !listingType) {
+      setError("Please select whether you want to Sell or Rent your Flat.");
+      return;
+    }
     if (phone.length < 10) {
       setError("Please enter a valid 10-digit WhatsApp number.");
       return;
     }
     setError("");
-    const draft = { ownerType, propertyType, phone };
+    const draft = { ownerType, propertyType, listingType, phone };
     try {
       let id = roomId;
       if (id) {
@@ -137,6 +143,9 @@ function AddRoomPageInner() {
                     type="button"
                     onClick={() => {
                       setPropertyType(x);
+                      if (x !== "Flat") {
+                        setListingType("");
+                      }
                       if (x && ownerType && phone) setError("");
                     }}
                   >
@@ -145,6 +154,34 @@ function AddRoomPageInner() {
                 ))}
               </div>
             </div>
+
+            {propertyType === "Flat" && (
+              <div className="mt-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="text-xs font-semibold uppercase text-zinc-700">
+                  Listing Type: <span className="text-red-500">*</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {["Sell", "Rent"].map((x) => (
+                    <button
+                      key={x}
+                      className={`rounded-full border px-6 py-2 text-sm font-medium transition-all ${
+                        listingType === x
+                          ? "border-black bg-black text-white shadow-md"
+                          : "border-zinc-300 text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50"
+                      }`}
+                      type="button"
+                      onClick={() => {
+                        setListingType(x);
+                        if (x && ownerType && phone) setError("");
+                      }}
+                    >
+                      {x}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mt-4">
               <div className="text-xs font-semibold uppercase text-zinc-700">
                 Your contact number <span className="text-red-500">*</span>

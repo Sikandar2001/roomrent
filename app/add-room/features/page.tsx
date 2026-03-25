@@ -78,6 +78,7 @@ function FeaturesPageInner() {
   const [customTotalFloors, setCustomTotalFloors] = useState("");
   const [furnishedStatus, setFurnishedStatus] = useState("");
   const [propertyType, setPropertyType] = useState("");
+  const [listingType, setListingType] = useState(""); // Sell or Rent
   const [plotArea, setPlotArea] = useState("");
   const [plotUnit, setPlotUnit] = useState("sq.ft.");
   const [plotLength, setPlotLength] = useState("");
@@ -151,6 +152,7 @@ function FeaturesPageInner() {
 
             setFurnishedStatus(data.furnishedStatus || "");
             setPropertyType(data.propertyType || "");
+            setListingType(data.listingType || "");
             setPlotArea(data.plotArea || "");
             setPlotUnit(data.plotUnit || "sq.ft.");
             setPlotLength(data.plotLength || "");
@@ -184,8 +186,8 @@ function FeaturesPageInner() {
       return;
     }
     
-    if (propertyType === "Plot") {
-      if (!plotArea || !rent) {
+    if (propertyType === "Plot" || listingType === "Sell") {
+      if (!rent) {
         setError("Please fill all mandatory fields (marked with *).");
         return;
       }
@@ -504,9 +506,11 @@ function FeaturesPageInner() {
         )}
 
         <div className="mt-10">
-          <h2 className="text-xl font-semibold text-zinc-900">Rent/ Lease Details</h2>
+          <h2 className="text-xl font-semibold text-zinc-900">
+            {listingType === "Sell" ? "Sell/ Lease Details" : "Rent/ Lease Details"}
+          </h2>
           <div className="mt-6 space-y-6">
-            {propertyType === "Plot" ? (
+            {propertyType === "Plot" || listingType === "Sell" ? (
               <>
                 {/* Expected Price Section */}
                 <div>
