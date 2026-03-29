@@ -192,7 +192,7 @@ function FeaturesPageInner() {
         return;
       }
     } else {
-      if (!bedrooms || !bathrooms || !rent || !deposit || !maintenanceCharge) {
+      if (!bedrooms || !bathrooms || !rent) {
         setError("Please fill all mandatory fields (marked with *).");
         return;
       }
@@ -613,7 +613,7 @@ function FeaturesPageInner() {
                   </div>
                   <div>
                     <div className="mb-2 text-sm font-medium text-zinc-700">
-                      Security Amount <span className="text-red-500">*</span>
+                      Security Amount
                     </div>
                     <div className="relative border-b border-zinc-300 focus-within:border-blue-600">
                       <span className="pointer-events-none absolute left-0 top-2 text-sm text-zinc-500">₹</span>
@@ -623,7 +623,7 @@ function FeaturesPageInner() {
                         value={deposit}
                         onChange={(e) => {
                           setDeposit(e.target.value);
-                          if (e.target.value && rent && maintenanceCharge) setError("");
+                          if (e.target.value && rent) setError("");
                         }}
                       />
                     </div>
@@ -632,7 +632,7 @@ function FeaturesPageInner() {
 
                 <div>
                   <div className="mb-2 text-sm font-medium text-zinc-700">
-                    Maintenance Charges <span className="text-red-500">*</span>
+                    Maintenance Charges
                   </div>
                   <div className="max-w-md relative border-b border-zinc-300 focus-within:border-blue-600">
                     <span className="pointer-events-none absolute left-0 top-2 text-sm text-zinc-500">₹</span>
@@ -642,14 +642,14 @@ function FeaturesPageInner() {
                       value={maintenanceCharge}
                       onChange={(e) => {
                         setMaintenanceCharge(e.target.value);
-                        if (e.target.value && rent && deposit) setError("");
+                        if (e.target.value && rent) setError("");
                       }}
                     />
                   </div>
                 </div>
 
                 <div className="max-w-md">
-                  <div className="mb-2 text-sm font-medium text-zinc-700">per <span className="text-red-500">*</span></div>
+                  <div className="mb-2 text-sm font-medium text-zinc-700">per</div>
                   <select
                     className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600"
                     value={maintenancePeriod}
